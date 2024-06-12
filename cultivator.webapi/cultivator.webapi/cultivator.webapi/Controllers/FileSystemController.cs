@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -39,6 +41,16 @@ namespace cultivator.webapi.Controllers
 
             public string BinaryContentsBase64 { get; set; }
         }
+
+        public class RequestResult
+        {
+            public bool Success { get; set; }
+
+            public string Message { get; set; }
+
+            public int ErrorCode { get; set; }
+        }
+
 
         private readonly ILogger<FileSystemController> _logger;
 
@@ -125,6 +137,20 @@ namespace cultivator.webapi.Controllers
             }
 
             return GetEntry(targetPath);
+        }
+
+        [Route("api/open-in-shell")]
+        [EnableCors]
+        public RequestResult PostOpenInShell([FromBody] PathInfo pathInfo)
+        {
+            var psi = new ProcessStartInfo() { 
+                FileName = pathInfo.Path,
+                UseShellExecute = true
+            };
+
+            Process.Start(psi);
+
+            return new RequestResult() { Success = true, Message = "", ErrorCode = 0 };
         }
     }
 }

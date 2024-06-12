@@ -39,6 +39,17 @@ namespace cultivator.webapi
             //{
             //    options.AllowSynchronousIO = true;
             //});
+
+            services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(
+                    builder => builder
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        //.WithOrigins(new string[] { "http://localhost:4200" })
+                        .WithOrigins(new string[] { "*" })
+                );
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -49,11 +60,13 @@ namespace cultivator.webapi
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseHttpsRedirection();
+            // app.UseHttpsRedirection();
 
             app.UseRouting();
 
             app.UseAuthorization();
+
+            app.UseCors();
 
             app.UseEndpoints(endpoints =>
             {
