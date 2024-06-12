@@ -85,11 +85,24 @@ export default {
     dragged(dx,dy) {
       this.x += dx;
       this.y += dy;
+      this.updated();
     },
     resized(dw,dh) {
       this.w += dw;
       this.h += dh;
+      this.updated();
     },
+    updated() {
+      let file = {
+        x: this.x,
+        y: this.y,
+        w: this.w,
+        h: this.h,
+        path: this.path,
+        subject: this.subject,
+      };
+      this.$emit("on-updated", this, file);
+    }
   },
   mounted() {
   }
