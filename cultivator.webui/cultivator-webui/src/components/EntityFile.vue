@@ -53,6 +53,7 @@ export default {
         lineHeight: `${f.h}px`,
         cursor: "nwse-resize",
         userSelect: "none",
+        opacity: 0.0,
       };
     },
     openInShell(path) {
