@@ -67,6 +67,10 @@ namespace cultivator.webapi.Controllers
 
             var uri = new Uri(targetDir);
 
+            if (!Directory.Exists(targetDir)) {
+                return new List<FileSystemEntry>();
+            }
+
             var files = Directory.GetFiles(targetDir, "*", SearchOption.TopDirectoryOnly)
                 .Select(p => new FileSystemEntry()
                 {
