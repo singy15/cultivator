@@ -33,7 +33,8 @@ export default {
         w: 300,
         h: 200,
         timeoutClose: null
-      }
+      },
+      intervalRefresh: null,
     }
   },
   watch: { },
@@ -184,10 +185,20 @@ export default {
               'Accept': 'application/json', 
               'Content-Type': 'application/json'} });
     },
+    setAutoRefresh() {
+      if(this.expanded) {
+        this.intervalRefresh = setInterval(() => {
+          this.populateEntries(this.path);
+        }, 1000 * 60);
+      } else {
+        clearInterval(this.intervalRefresh);
+      }
+    },
     setExpanded(expanded) {
       this.expanded = expanded;
       this.populateEntries(this.path);
       this.updated();
+      this.setAutoRefresh();
     },
     formatEntry(entry) {
       return ((entry.isDirectory)? "/" : "") + entry.path.replace("\\","");
@@ -251,6 +262,7 @@ export default {
   },
   mounted() {
     this.populateEntries(this.path);
+    this.setAutoRefresh();
   }
 }
 </script>
