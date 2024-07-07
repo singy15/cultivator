@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
+using Microsoft.VisualBasic.FileIO;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,6 +33,13 @@ namespace cultivator.webapi.Controllers
         public class PathInfo
         {
             public string Path { get; set; }
+        }
+
+        public class FileOpInfo
+        {
+            public string PathSrc { get; set; }
+
+            public string PathDst { get; set; }
         }
 
         public class ContentsInfo
@@ -67,11 +76,12 @@ namespace cultivator.webapi.Controllers
 
             var uri = new Uri(targetDir);
 
-            if (!Directory.Exists(targetDir)) {
+            if (!Directory.Exists(targetDir))
+            {
                 return new List<FileSystemEntry>();
             }
 
-            var files = Directory.GetFiles(targetDir, "*", SearchOption.TopDirectoryOnly)
+            var files = Directory.GetFiles(targetDir, "*", System.IO.SearchOption.TopDirectoryOnly)
                 .Select(p => new FileSystemEntry()
                 {
                     AbsPath = p,
@@ -81,7 +91,7 @@ namespace cultivator.webapi.Controllers
                     BinaryContentsBase64 = null
                 })
                 .ToList();
-            var dirs = Directory.GetDirectories(targetDir, "*", SearchOption.TopDirectoryOnly)
+            var dirs = Directory.GetDirectories(targetDir, "*", System.IO.SearchOption.TopDirectoryOnly)
                 .Select(p => new FileSystemEntry()
                 {
                     AbsPath = p,
@@ -147,7 +157,8 @@ namespace cultivator.webapi.Controllers
         [EnableCors]
         public RequestResult PostOpenInShell([FromBody] PathInfo pathInfo)
         {
-            var psi = new ProcessStartInfo() { 
+            var psi = new ProcessStartInfo()
+            {
                 FileName = pathInfo.Path,
                 UseShellExecute = true
             };
@@ -156,5 +167,51 @@ namespace cultivator.webapi.Controllers
 
             return new RequestResult() { Success = true, Message = "", ErrorCode = 0 };
         }
+
+        [Route("api/copy")]
+        [EnableCors]
+        public RequestResult PostCopy([FromBody] FileOpInfo fileOpInfo)
+        {
+            string copySrc = fileOpInfo.PathSrc;
+            string copyDest = fileOpInfo.PathDst;
+
+            if (Directory.Exists(copySrc))
+            {
+                copyDest = Path.Combine(copyDest, Path.GetFileName(copySrc));
+                Microsoft.VisualBasic.FileIO.FileSystem.CopyDirectory(
+                  copySrc, copyDest, UIOption.AllDialogs);
+            }
+            else { 
+                copyDest = Path.Combine(copyDest, Path.GetFileName(copySrc));
+                Microsoft.VisualBasic.FileIO.FileSystem.CopyFile(
+                  copySrc, copyDest, UIOption.AllDialogs);
+            }
+
+            return new RequestResult() { Success = true, Message = "", ErrorCode = 0 };
+        }
+
+        [Route("api/move")]
+        [EnableCors]
+        public RequestResult PostMove([FromBody] FileOpInfo fileOpInfo)
+        {
+            string copySrc = fileOpInfo.PathSrc;
+            string copyDest = fileOpInfo.PathDst;
+
+            if (Directory.Exists(copySrc))
+            {
+                copyDest = Path.Combine(copyDest, Path.GetFileName(copySrc));
+                Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(
+                  copySrc, copyDest, UIOption.AllDialogs);
+            }
+            else { 
+                copyDest = Path.Combine(copyDest, Path.GetFileName(copySrc));
+                Microsoft.VisualBasic.FileIO.FileSystem.MoveFile(
+                  copySrc, copyDest, UIOption.AllDialogs);
+            }
+
+            return new RequestResult() { Success = true, Message = "", ErrorCode = 0 };
+        }
+
+
     }
 }

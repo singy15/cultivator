@@ -1,6 +1,7 @@
 <script>
 import EntityFile from './EntityFile.vue';
 
+const endpoint = import.meta.env.VITE_API_ENDPOINT;
 let storageBaseKey = "cultivator";
 
 function getStorage(key, defaultValue) {
@@ -42,6 +43,13 @@ export default {
         { oid: uuid4(), x: 100, y: 350, w: 150, h: 100, path: "c:\\root\\wk\\main.lisp", subject: "main.lisp", expanded: false, },
       ]),
       selectedOid: null,
+      fileop: {
+        eventSrc: null,
+        eventDst: null,
+        mode: null,
+        src: null,
+        dst: null,
+      }
     }
   },
   watch: { },
@@ -68,10 +76,10 @@ export default {
       return { 
         oid: uuid4(), 
         x: 100, y: 100, 
-        w: 100, h: 100, 
+        w: 300, h: 200, 
         path: path,
         subject: subject, 
-        expanded: false, 
+        expanded: true, 
       };
     },
     addFile() {
@@ -103,24 +111,79 @@ export default {
       let file = this.createFile(subject, path);
       this.files.push(file);
       this.saveStorage();
-    }
+    },
+    onFileDeleted(comp, file) {
+      let target = this.files.filter(f => f.oid === file.oid)[0];
+
+      if(!confirm(`Are you sure to delete "${target.subject}" ?`)) return;
+
+      this.files = this.files.filter(f => f.oid !== target.oid);
+      this.saveStorage();
+    },
+    onCopy(comp,path) {
+      this.fileop.eventSrc = comp;
+      this.fileop.mode = "copy";
+      this.fileop.src = path[0];
+      console.log("copied", path, this.fileop);
+    },
+    onCut(comp,path) {
+      this.fileop.eventSrc = comp;
+      this.fileop.mode = "cut";
+      this.fileop.src = path[0];
+      console.log("cut", path, this.fileop);
+    },
+    onPaste(comp,path) {
+      console.log(comp,path);
+      this.fileop.dst = path[0];
+      this.fileop.eventDst = comp;
+      if(!(this.fileop.src)) return;
+
+      console.log("paste", path, this.fileop);
+      
+      let op = null;
+      if(this.fileop.mode === "copy") {
+        op = fetch(`${endpoint}/filesystem/api/copy`, 
+          { method: "POST", body: JSON.stringify({ 
+              pathSrc: this.fileop.src, pathDst: this.fileop.dst }),
+            headers: {'Accept': 'application/json', 'Content-Type': 'application/json'} });
+      } else if(this.fileop.mode === "cut") {
+        op = fetch(`${endpoint}/filesystem/api/move`, 
+          { method: "POST", body: JSON.stringify({ 
+              pathSrc: this.fileop.src, pathDst: this.fileop.dst }),
+            headers: {'Accept': 'application/json', 'Content-Type': 'application/json'} });
+      }
+
+      op.then(r => r.json()).then(data => {
+        console.log(data);
+        this.fileop.eventSrc.refresh();
+        this.fileop.eventDst.refresh();
+      })
+    },
   },
   mounted() {
+    document.body.addEventListener("dblclick", () => {
+      this.addFile();
+    });
   }
 }
 </script>
 
 <template>
-  <div style="position:relative;">
+  <div style="position:relative;" @dblclick.stop="addFile">
     <template v-for="file in files" :key="file.oid">
       <EntityFile :ifile="file" 
         @on-updated="onUpedateFile" 
         @on-click="objectClicked"
         @on-pinned="onFilePinned"
+        @on-deleted="onFileDeleted"
+        @on-copy="onCopy"
+        @on-cut="onCut"
+        @on-paste="onPaste"
         ></EntityFile>
     </template>
   </div>
 
+  <!--
   <div style="position:fixed; left:30px; bottom:50px; 
     width:100px; height:32px; outline:solid 1px #aaa; 
     background-color:#ccc; text-align:center; line-height:32px;
@@ -136,6 +199,7 @@ export default {
     @click="delFile">
     DEL FILE
   </div>
+  -->
 </template>
 
 <style scoped>
