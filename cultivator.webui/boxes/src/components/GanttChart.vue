@@ -34,37 +34,39 @@ export default {
 
 <template>
 
+  <div class="box-container ba">
 
-    <div class="box blt" style="width:20em">subject</div>
-    <div class="box blt br":style="{width:`${calendar.length * 4}em`}">date</div>
+    <div class="box" style="width:20em">subject</div>
+    <div class="box bl":style="{width:`${calendar.length * 4}em`}">date</div>
 
     <br/>
 
-    <div class="box bl" style="width:20em">&nbsp;</div>
-    <div class="box">
+    <div class="box" style="width:20em">&nbsp;</div>
+    <div class="box-container">
       <template v-for="date in calendar">
-        <div class="box bt bl br-last" :style="{width:`${4}em`, textAlign:`center`}">{{ date.date }}</div>
+        <div class="box bt bl" :style="{width:`${4}em`, textAlign:`center`}">{{ date.date }}</div>
       </template>
     </div>
 
     <br/>
 
     <template v-for="(row, i) in rows">
-      <div class="box bb-last">
-        <div class="box blt" style="width:20em;">
+      <!-- <div class="box-container bb-last"> -->
+        <div class="box bt" style="width:20em;">
           <input />
         </div>
 
         <template v-for="date in calendar">
-          <div class="box bl bt br-last" :style="{width:`${4}em`}">
+          <div class="box bl bt" :style="{width:`${4}em`}">
             <input />
           </div>
         </template>
 
-      </div>
+      <!-- </div> -->
       <br v-if="i !== (rows.length - 1)" />
     </template>
 
+  </div>
 
 
 <!--
@@ -98,6 +100,10 @@ export default {
     height: 2.5em;
   }
 
+  .box-container {
+    border-color: #ccc;
+  }
+
   input {
     vertical-align: middle;
     box-sizing: border-box;
@@ -106,7 +112,8 @@ export default {
     border: none;
     width: 100%;
     /*height: calc(100% - 1px);*/
-    height: 1.5em;
+    /*height: 1.5em;*/
+    height: 100%;
     line-height: 1.5em;
     font-size: 1em;
     color: inherit;
