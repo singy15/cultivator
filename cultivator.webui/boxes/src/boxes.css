@@ -1,7 +1,7 @@
 
 .box {
   box-sizing: border-box;
-  display: inline-block;
+  display: inline-flex;
   vertical-align: top;
   white-space: nowrap;
   font-size: 1.0em;
