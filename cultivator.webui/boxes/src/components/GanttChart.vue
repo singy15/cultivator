@@ -2,47 +2,72 @@
 import "../boxes.css";
 import moment from "moment";
 
+function now() {
+  return moment().startOf("day");
+}
+
+function dateRange(base, days) {
+  let ds = [];
+  for(let i = 0; i < days; i++) {
+    ds.push(moment(base).add(i, "days").toDate());
+  }
+  return ds;
+}
+
 export default {
   components: {
   },
   data() {
+    let ds = dateRange(now().toDate(), 10).map(d => {
+      return { date: d };
+    });
     return {
-      calendar: [
-        { date: moment().add(1,"days").toDate() },
-        { date: moment().add(2,"days").toDate() },
-        { date: moment().add(3,"days").toDate() },
-        { date: moment().add(4,"days").toDate() },
-        { date: moment().add(5,"days").toDate() },
-      ],
+      calendar: ds,
       rows: [
-        { id: "t1", subject: "task1", },
-        { id: "t2", subject: "task2", },
-        { id: "t3", subject: "task3", },
+        { id: "1", subject: "task1", },
+        { id: "2", subject: "task2", },
+        { id: "3", subject: "task3", },
       ],
-      costPl: [
-        { taskId: "t1", date: moment().add(2,"days").toDate(), cost: 2.0 },
-        { taskId: "t1", date: moment().add(3,"days").toDate(), cost: 2.0 },
-        { taskId: "t1", date: moment().add(5,"days").toDate(), cost: 1.0 },
-        { taskId: "t2", date: moment().add(2,"days").toDate(), cost: 2.0 },
+      costPls: [
+        { taskId: "1", date: now().add(1,"days").toDate(), cost: 7.0 },
+        { taskId: "1", date: now().add(2,"days").toDate(), cost: 7.0 },
+        { taskId: "1", date: now().add(3,"days").toDate(), cost: 7.0 },
+        { taskId: "2", date: now().add(4,"days").toDate(), cost: 7.0 },
+        { taskId: "2", date: now().add(5,"days").toDate(), cost: 3.0 },
       ],
-      costAc: [
-        { taskId: "t1", date: moment().add(2,"days").toDate(), cost: 2.0 },
-        { taskId: "t1", date: moment().add(3,"days").toDate(), cost: 2.0 },
-        { taskId: "t1", date: moment().add(5,"days").toDate(), cost: 1.0 },
-        { taskId: "t2", date: moment().add(2,"days").toDate(), cost: 2.0 },
+      costAcs: [
+        { taskId: "1", date: now().add(1,"days").toDate(), cost: 7.0 },
+        { taskId: "1", date: now().add(2,"days").toDate(), cost: 7.0 },
+        { taskId: "2", date: now().add(3,"days").toDate(), cost: 7.0 },
+        { taskId: "2", date: now().add(4,"days").toDate(), cost: 3.0 },
       ]
     }
   },
   watch: { },
   computed: {
-    costInput: function() {
+    costInputs: function() {
       return this.rows.map(r => {
         let costsPl = new Array(this.calendar.length);
         let costsAc = new Array(this.calendar.length);
 
-        this.calendar.forEach(c)
+        this.calendar.forEach((c,i) => {
+          costsPl[i] = [null, null];
+          costsAc[i] = [null, null];
+          
+          let curDt = c.date;
 
-        this.costPl.filter(p => p.taskId === r.id 
+          let pl = this.costPls.filter(p => p.taskId === r.id && p.date.getTime() === curDt.getTime())[0];
+          let ac = this.costAcs.filter(a => a.taskId === r.id && a.date.getTime() === curDt.getTime())[0];
+          
+          if(pl) { 
+            costsPl[i][0] = pl.cost; 
+            costsPl[i][1] = pl;
+          }
+          if(ac) { 
+            costsAc[i][0] = ac.cost;
+            costsAc[i][1] = ac;
+          }
+        });
 
         return [costsPl, costsAc];
       });
@@ -51,6 +76,38 @@ export default {
   methods: {
     formatDateYM(date) {
       return moment(date).format("MM/DD");
+    },
+    modifyCost(e, i, n, j, costInput) {
+      let newVal = e.target.value;
+
+      if(newVal === "") {
+        if(n === 0) {
+          this.costPls = this.costPls.filter(p => p != costInput[1]);
+        } else if(n === 1) {
+          this.costAcs = this.costAcs.filter(a => a != costInput[1]);
+        }
+        return;
+      }
+
+      let cost = parseFloat(newVal, 10);
+      if(costInput[1] != null) {
+        costInput.cost = cost;
+      } else {
+        let row = this.rows[i];
+        let d = this.calendar[j].date;
+        let costData = { taskId: row.id, date: d, cost: cost };
+        if(n === 0) {
+          this.costPls.push(costData);
+        } else if(n === 1) {
+          this.costAcs.push(costData);
+        }
+      }
+    },
+    inputAllSelect(e) {
+      e.target.select();
+    },
+    isBlank(val) {
+      return val == null || val === undefined; 
     }
   },
   mounted() {
@@ -80,17 +137,25 @@ export default {
 
     <template v-for="(row, i) in rows">
         <div class="box bt" style="width:20em;">
-          <input />
+          <input v-model="row.subject" @click="inputAllSelect($event)" />
         </div>
 
-        <template v-for="date in calendar">
+        <template v-for="(date,j) in calendar">
           <div class="box bl bt" :style="{width:`${4}em`, flexDirection:`column`}">
             <input :style="{textAlign:`center`, fontSize:`0.8em`,
-              backgroundColor:`rgba(200,200,255,0.7)`
-              }" :value="0"/>
+              backgroundColor:(!isBlank(costInputs[i][0][j][0]))? `rgba(200,200,255,0.7)` : `transparent`,
+              }" 
+              :value="costInputs[i][0][j][0]"
+              @change="modifyCost($event, i, 0, j, costInputs[i][0][j])"
+              @click="inputAllSelect($event)"
+              />
             <input :style="{textAlign:`center`, fontSize:`0.8em`,
-              backgroundColor:`rgba(255,255,200,0.7)`
-              }" :value="0"/>
+              backgroundColor:(!isBlank(costInputs[i][1][j][0]))? `rgba(255,255,200,0.7)` : `transparent`,
+              }" 
+              :value="costInputs[i][1][j][0]"
+              @change="modifyCost($event, i, 1, j, costInputs[i][1][j])"
+              @click="inputAllSelect($event)"
+              />
           </div>
         </template>
 
