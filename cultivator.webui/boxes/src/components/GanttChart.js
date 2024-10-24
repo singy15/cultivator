@@ -68,6 +68,7 @@ export default {
       focusRow: -1,
       focusCol: -1,
       timeoutReview: null,
+      tasklistWidth: `20em`,
     }
   },
   watch: { },

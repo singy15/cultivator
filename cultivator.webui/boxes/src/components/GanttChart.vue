@@ -9,17 +9,17 @@ export default ganttChart;
       style="overflow:auto; width:80em; height:50em; position:relative;"
     @scroll="scroll">
 
-    <div class="box br" style="width:20em; position:sticky; left:0; top:0; 
-        height:2.5em; background-color:#fff; z-index:10000;">subject</div>
+    <div class="box br" :style="{width:tasklistWidth, position:`sticky`, left:0, top:0, 
+        height:`2.5em`, backgroundColor:`#fff`, zIndex:10000}">subject</div>
     <div class="box bb" :style="{width:`${calendar.length * 4}em`, 
-        position:`sticky`, top:0, left:`20em`, backgroundColor:`#fff`, 
+        position:`sticky`, top:0, left:tasklistWidth, backgroundColor:`#fff`, 
         zIndex:`9990` }">date</div>
 
     <br/>
 
-    <div class="box br bb" style="width:20em; position:sticky; left:0; 
-        top:2.5em; height:2.5em; background-color:#fff; 
-        z-index:10000">&nbsp;</div>
+    <div class="box br bb" :style="{width:tasklistWidth, position:`sticky`, left:0, 
+        top:`2.5em`, height:`2.5em`, backgroundColor:`#fff`, 
+        zIndex:10000}">&nbsp;</div>
     <template v-for="date in calendar">
       <div class="box bb br" :style="{width:`${4}em`, justifyContent:`center`, 
           position:`sticky`, top:`2.5em`, backgroundColor:`#fff`, 
@@ -42,8 +42,8 @@ export default ganttChart;
 
     <template v-for="(row, i) in rows">
       <template v-if="viewWindowRow[0] <= i && i <= viewWindowRow[1]">
-        <div class="box br bb" style="width:20em; position:sticky; left:0;
-            z-index:999; background-color:#fff" 
+        <div class="box br bb" :style="{width:tasklistWidth, position:`sticky`, left:0,
+            zIndex:999, backgroundColor:`#fff`}" 
           @mouseover="mouseoverRow = i">
 
           <span v-if="mouseoverRow !== i && focusRow !== i">{{ row.subject }}</span>
