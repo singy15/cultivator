@@ -14,20 +14,39 @@ function dateRange(base, days) {
   return ds;
 }
 
+function times(n, fn) {
+  let xs = [];
+  for(let i = 0; i < n; i++) {
+    xs.push(fn(i));
+  }
+  return xs;
+}
+
+function em2px(em) {
+  return Number(em) * Number(
+    window.getComputedStyle(document.body)
+    .getPropertyValue('font-size').match(/\d+/)[0]);
+}
+
 export default {
   components: {
   },
   data() {
-    let ds = dateRange(now().toDate(), 10).map(d => {
+    let ds = dateRange(now().toDate(), 31 * 4).map(d => {
       return { date: d };
     });
+    let rs = times(200, (i) => {
+      return { id: `${i}`, subject: `task${i}`, };
+    });
+
+    let rowHeight = em2px(2.5);
+    let rowsInScreen = Math.ceil(em2px(50) / rowHeight);
+    let colWidth = em2px(4);
+    let colsInScreen = Math.ceil(em2px(80 - 20) / colWidth);
+
     return {
       calendar: ds,
-      rows: [
-        { id: "1", subject: "task1", },
-        { id: "2", subject: "task2", },
-        { id: "3", subject: "task3", },
-      ],
+      rows: rs,
       costPls: [
         { taskId: "1", date: now().add(1,"days").toDate(), cost: 7.0 },
         { taskId: "1", date: now().add(2,"days").toDate(), cost: 7.0 },
@@ -40,7 +59,12 @@ export default {
         { taskId: "1", date: now().add(2,"days").toDate(), cost: 7.0 },
         { taskId: "2", date: now().add(3,"days").toDate(), cost: 7.0 },
         { taskId: "2", date: now().add(4,"days").toDate(), cost: 3.0 },
-      ]
+      ],
+      scrollTop: 0,
+      viewWindowRow: [0,rowsInScreen],
+      viewWindowCol: [0,colsInScreen],
+      mouseoverRow: -1,
+      mouseoverCol: -1,
     }
   },
   watch: { },
@@ -74,6 +98,25 @@ export default {
     }
   },
   methods: {
+    msg(val) {
+      console.log(val);
+    },
+    scroll() {
+      let scrollTop = this.$refs.root.scrollTop;
+      let scrollLeft = this.$refs.root.scrollLeft;
+      let rowHeight = em2px(2.5);
+      let rowsInScreen = Math.ceil(em2px(50) / rowHeight);
+      let colWidth = em2px(4);
+      let colsInScreen = Math.ceil(em2px(80 - 20) / colWidth);
+      let rowsToHide = Math.floor(scrollTop / rowHeight);
+      this.viewWindowRow = [ 
+        Math.floor(scrollTop / rowHeight),
+        Math.floor(scrollTop / rowHeight) + rowsInScreen];
+      this.viewWindowCol = [ 
+        Math.floor(scrollLeft / colWidth),  
+        Math.floor(scrollLeft / colWidth) + colsInScreen];
+      this.scrollTop = scrollTop;
+    },
     formatDateYM(date) {
       return moment(date).format("MM/DD");
     },
