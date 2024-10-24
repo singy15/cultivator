@@ -22,9 +22,9 @@ export default ganttChart;
 
     <br/>
 
-    <div :style="{position:`absolute`, top:`${2.5 * 2}em`, zIndex:0, width:`${4 * calendar.length}em`, height:`${2.5 * calendar.length}em`}">asdf</div>
+    <div :style="{position:`absolute`, top:`${2.5 * 2}em`, zIndex:0, width:`${4 * calendar.length}em`, height:`${2.5 * calendar.length}em`}">&nbsp;</div>
 
-      <div v-if="viewWindowRow[0] >= 1" class="box" :style="{zIndex:0, height:`${2.5 * viewWindowRow[0]}em`, backgroundColor:`red`}">
+      <div v-if="viewWindowRow[0] >= 1" class="box" :style="{zIndex:0, height:`${2.5 * viewWindowRow[0]}em`}">
       &nbsp;
       </div>
       <br v-if="viewWindowRow[0] >= 1" />

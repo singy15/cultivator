@@ -35,7 +35,7 @@ export default {
     let ds = dateRange(now().toDate(), 31 * 12).map(d => {
       return { date: d };
     });
-    let rs = times(200, (i) => {
+    let rs = times(500, (i) => {
       return { id: `${i}`, subject: `task${i}`, };
     });
 
