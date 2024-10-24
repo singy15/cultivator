@@ -22,15 +22,24 @@ export default ganttChart;
 
     <br/>
 
-<!--
-    <div :style="{position:`absolute`, top:`${2.5 * 2}em`, zIndex:20000, width:`${4 * calendar.length}em`, height:`${2.5 * calendar.length}em`}">asdf</div>
-    -->
+    <div :style="{position:`absolute`, top:`${2.5 * 2}em`, zIndex:0, width:`${4 * calendar.length}em`, height:`${2.5 * calendar.length}em`}">asdf</div>
+
+      <div v-if="viewWindowRow[0] >= 1" class="box" :style="{zIndex:0, height:`${2.5 * viewWindowRow[0]}em`, backgroundColor:`red`}">
+      &nbsp;
+      </div>
+      <br v-if="viewWindowRow[0] >= 1" />
 
     <template v-for="(row, i) in rows">
+      <template v-if="viewWindowRow[0] <= i && i <= viewWindowRow[1]">
         <div class="box br bb" style="width:20em; position:sticky; left:0; z-index:999; background-color:#fff" 
           @mouseover="mouseoverRow = i">
+
           <span v-if="mouseoverRow !== i">{{ row.subject }}</span>
           <input v-if="mouseoverRow === i" v-model="row.subject" @click="inputAllSelect($event)" style=""/>
+
+          <!--
+          <input v-model="row.subject" @click="inputAllSelect($event)" style=""/>
+          -->
         </div>
 
         <div class="box bb" :style="{display:`inline-block`, position:`relative`, width:`${4 * calendar.length}em`, backgroundColor:`transparent`}"
@@ -40,6 +49,7 @@ export default ganttChart;
               <template v-if="viewWindowCol[0] <= j && j <= viewWindowCol[1]">
                 <div class="box br" :style="{width:`${4}em`, flexDirection:`column`, position:`absolute`, left:`${(j * 4)}em`}" 
                   @mouseover="mouseoverCol = j">
+
                   <span v-if="mouseoverCol !== j || mouseoverRow !== i" :style="{
                     textAlign:`center`, lineHeight:`1.20em`,
                     backgroundColor:(!isBlank(costInputs[i][0][j][0]))? `rgba(200,200,255,0.7)` : `transparent`,
@@ -56,6 +66,7 @@ export default ganttChart;
                     :value="costInputs[i][0][j][0]"
                     @change="modifyCost($event, i, 0, j, costInputs[i][0][j])"
                     @click="inputAllSelect($event)"
+                    name="a"
                     />
                   <input v-if="mouseoverCol === j && mouseoverRow === i"
                     :style="{textAlign:`center`, fontSize:`0.8em`,
@@ -64,7 +75,28 @@ export default ganttChart;
                     :value="costInputs[i][1][j][0]"
                     @change="modifyCost($event, i, 1, j, costInputs[i][1][j])"
                     @click="inputAllSelect($event)"
+                    name="b"
                     />
+
+                  <!--
+                  <input
+                    :style="{textAlign:`center`, fontSize:`0.8em`, lineHeight:`1.25em`,
+                    backgroundColor:(!isBlank(costInputs[i][0][j][0]))? `rgba(200,200,255,0.7)` : `transparent`,
+                    }" 
+                    :value="costInputs[i][0][j][0]"
+                    @change="modifyCost($event, i, 0, j, costInputs[i][0][j])"
+                    @click="inputAllSelect($event)"
+                    />
+                  <input
+                    :style="{textAlign:`center`, fontSize:`0.8em`,
+                    backgroundColor:(!isBlank(costInputs[i][1][j][0]))? `rgba(255,255,200,0.7)` : `transparent`,
+                    }" 
+                    :value="costInputs[i][1][j][0]"
+                    @change="modifyCost($event, i, 1, j, costInputs[i][1][j])"
+                    @click="inputAllSelect($event)"
+                    />
+                  -->
+
                 </div>
               </template>
             </template>
@@ -72,6 +104,7 @@ export default ganttChart;
         </div>
 
         <br v-if="i !== (rows.length - 1)" />
+      </template>
     </template>
 
   </div>

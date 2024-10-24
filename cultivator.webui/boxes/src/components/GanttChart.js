@@ -32,7 +32,7 @@ export default {
   components: {
   },
   data() {
-    let ds = dateRange(now().toDate(), 31 * 4).map(d => {
+    let ds = dateRange(now().toDate(), 31 * 12).map(d => {
       return { date: d };
     });
     let rs = times(200, (i) => {
@@ -65,6 +65,7 @@ export default {
       viewWindowCol: [0,colsInScreen],
       mouseoverRow: -1,
       mouseoverCol: -1,
+      timeoutReview: null,
     }
   },
   watch: { },
@@ -102,20 +103,25 @@ export default {
       console.log(val);
     },
     scroll() {
-      let scrollTop = this.$refs.root.scrollTop;
-      let scrollLeft = this.$refs.root.scrollLeft;
-      let rowHeight = em2px(2.5);
-      let rowsInScreen = Math.ceil(em2px(50) / rowHeight);
-      let colWidth = em2px(4);
-      let colsInScreen = Math.ceil(em2px(80 - 20) / colWidth);
-      let rowsToHide = Math.floor(scrollTop / rowHeight);
-      this.viewWindowRow = [ 
-        Math.floor(scrollTop / rowHeight),
-        Math.floor(scrollTop / rowHeight) + rowsInScreen];
-      this.viewWindowCol = [ 
-        Math.floor(scrollLeft / colWidth),  
-        Math.floor(scrollLeft / colWidth) + colsInScreen];
-      this.scrollTop = scrollTop;
+      if(this.timeoutReview) {
+        clearTimeout(this.timeoutReview);
+      }
+      this.timeoutReview = setTimeout(() => {
+        let scrollTop = this.$refs.root.scrollTop;
+        let scrollLeft = this.$refs.root.scrollLeft;
+        let rowHeight = em2px(2.5);
+        let rowsInScreen = Math.ceil(em2px(50) / rowHeight);
+        let colWidth = em2px(4);
+        let colsInScreen = Math.ceil(em2px(80 - 20) / colWidth);
+        let rowsToHide = Math.floor(scrollTop / rowHeight);
+        this.viewWindowRow = [ 
+          Math.floor(scrollTop / rowHeight),
+          Math.floor(scrollTop / rowHeight) + rowsInScreen];
+        this.viewWindowCol = [ 
+          Math.floor(scrollLeft / colWidth),  
+          Math.floor(scrollLeft / colWidth) + colsInScreen];
+        this.scrollTop = scrollTop;
+      }, 300);
     },
     formatDateYM(date) {
       return moment(date).format("MM/DD");
