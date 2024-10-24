@@ -81,8 +81,10 @@ export default {
           
           let curDt = c.date;
 
-          let pl = this.costPls.filter(p => p.taskId === r.id && p.date.getTime() === curDt.getTime())[0];
-          let ac = this.costAcs.filter(a => a.taskId === r.id && a.date.getTime() === curDt.getTime())[0];
+          let pl = this.costPls.filter(
+            p => p.taskId === r.id && p.date.getTime() === curDt.getTime())[0];
+          let ac = this.costAcs.filter(
+            a => a.taskId === r.id && a.date.getTime() === curDt.getTime())[0];
           
           if(pl) { 
             costsPl[i][0] = pl.cost; 
