@@ -107,6 +107,9 @@ export default {
       console.log(ed - sd);
 
       return cis;
+    },
+    rootWidth: function() {
+      return 4 * this.calendar.length;
     }
   },
   methods: {
