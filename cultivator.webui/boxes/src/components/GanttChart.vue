@@ -46,9 +46,10 @@ export default ganttChart;
             z-index:999; background-color:#fff" 
           @mouseover="mouseoverRow = i">
 
-          <span v-if="mouseoverRow !== i">{{ row.subject }}</span>
-          <input v-if="mouseoverRow === i" v-model="row.subject" 
-            @click="inputAllSelect($event)" style=""/>
+          <span v-if="mouseoverRow !== i && focusRow !== i">{{ row.subject }}</span>
+          <input v-if="mouseoverRow === i || focusRow === i" v-model="row.subject" 
+            @click="inputAllSelect($event)" 
+            @focus="focusRow = i"/>
 
           <!--
           <input v-model="row.subject" @click="inputAllSelect($event)"/>
@@ -67,7 +68,7 @@ export default ganttChart;
                   left:`${(j * 4)}em`}" 
                   @mouseover="mouseoverCol = j">
 
-                  <span v-if="mouseoverCol !== j || mouseoverRow !== i" 
+                  <span v-if="!(mouseoverCol === j && mouseoverRow === i) && !(focusCol === j && focusRow === i)" 
                     :style="{
                       textAlign:`center`, lineHeight:`1.20em`,
                       backgroundColor:(!isBlank(costInputs[i][0][j][0]))? `rgba(200,200,255,0.7)` : `transparent`,
@@ -77,7 +78,7 @@ export default ganttChart;
                     </span>
                   </span>
 
-                  <span v-if="mouseoverCol !== j || mouseoverRow !== i" 
+                  <span v-if="!(mouseoverCol === j && mouseoverRow === i) && !(focusCol === j && focusRow === i)" 
                     :style="{
                     textAlign:`center`, lineHeight:`1.25em`,
                     backgroundColor:(!isBlank(costInputs[i][1][j][0]))? `rgba(255,255,200,0.7)` : `transparent`,
@@ -87,7 +88,7 @@ export default ganttChart;
                     </span>
                   </span>
 
-                  <input v-if="mouseoverCol === j && mouseoverRow === i" 
+                  <input v-if="(mouseoverCol === j && mouseoverRow === i) || (focusCol === j && focusRow === i)" 
                     :style="{textAlign:`center`, fontSize:`0.8em`, 
                     lineHeight:`1.25em`,
                     backgroundColor:(!isBlank(costInputs[i][0][j][0]))? `rgba(200,200,255,0.7)` : `transparent`,
@@ -95,14 +96,16 @@ export default ganttChart;
                     :value="costInputs[i][0][j][0]"
                     @change="modifyCost($event, i, 0, j, costInputs[i][0][j])"
                     @click="inputAllSelect($event)"
+                    @focus="focusRow = i; focusCol = j"
                     />
-                  <input v-if="mouseoverCol === j && mouseoverRow === i"
+                  <input v-if="(mouseoverCol === j && mouseoverRow === i) || (focusCol === j && focusRow === i)" 
                     :style="{textAlign:`center`, fontSize:`0.8em`,
                     backgroundColor:(!isBlank(costInputs[i][1][j][0]))? `rgba(255,255,200,0.7)` : `transparent`,
                     }" 
                     :value="costInputs[i][1][j][0]"
                     @change="modifyCost($event, i, 1, j, costInputs[i][1][j])"
                     @click="inputAllSelect($event)"
+                    @focus="focusRow = i; focusCol = j"
                     />
 
                   <!--

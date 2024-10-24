@@ -65,13 +65,16 @@ export default {
       viewWindowCol: [0,colsInScreen],
       mouseoverRow: -1,
       mouseoverCol: -1,
+      focusRow: -1,
+      focusCol: -1,
       timeoutReview: null,
     }
   },
   watch: { },
   computed: {
     costInputs: function() {
-      return this.rows.map(r => {
+      let sd = new Date();
+      let cis = this.rows.map(r => {
         let costsPl = new Array(this.calendar.length);
         let costsAc = new Array(this.calendar.length);
 
@@ -98,6 +101,11 @@ export default {
 
         return [costsPl, costsAc];
       });
+      let ed = new Date();
+
+      console.log(ed - sd);
+
+      return cis;
     }
   },
   methods: {
