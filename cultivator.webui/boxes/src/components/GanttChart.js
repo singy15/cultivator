@@ -2,6 +2,37 @@
 import "../boxes.css";
 import moment from "moment";
 
+// const endpoint = import.meta.env.VITE_API_ENDPOINT;
+let storageBaseKey = "gantt-chart";
+
+function getStorage(key, defaultValue) {
+  let val = localStorage.getItem(`${storageBaseKey}/${key}`);
+  if(val === "undefined" || val === "null" || val == null || val === undefined) {
+    return defaultValue;
+  } else {
+    return JSON.parse(val);
+  }
+}
+
+function setStorage(key, obj) {
+  localStorage.setItem(`${storageBaseKey}/${key}`, JSON.stringify(obj));
+}
+
+function uuid4() {
+  let str = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".split("");
+  for (let i = 0, len = str.length; i < len; i++) {
+    switch (str[i]) {
+      case "x":
+        str[i] = Math.floor(Math.random() * 16).toString(16);
+        break;
+      case "y":
+        str[i] = (Math.floor(Math.random() * 4) + 8).toString(16);
+        break;
+    }
+  }
+  return str.join("");
+}
+
 function now() {
   return moment().startOf("day");
 }
@@ -10,6 +41,16 @@ function dateRange(base, days) {
   let ds = [];
   for(let i = 0; i < days; i++) {
     ds.push(moment(base).add(i, "days").toDate());
+  }
+  return ds;
+}
+
+function dateRangeSE(st, ed) {
+  let ds = [];
+  let cur = moment(st);
+  let med = moment(ed);
+  for(; med.diff(cur, "days") > 0; cur.add(1, "days")) {
+    ds.push(cur.toDate());
   }
   return ds;
 }
@@ -84,39 +125,36 @@ export default {
       type: Number,
       default: 0.8,
       required: false,
-    }
+    },
+    startDate: {
+      type: Date,
+      default: new Date(),
+      required: false,
+    },
+    endDate: {
+      type: Date,
+      default: moment(new Date()).add(1, "months").toDate(),
+      required: false,
+    },
   },
   components: {
   },
   data() {
-    let ds = dateRange(now().toDate(), 31 * 4).map(d => {
+    let ds = dateRangeSE(this.startDate, this.endDate).map(d => {
       return { date: d };
     });
-    let rs = times(200, (i) => {
-      return { id: `${i}`, subject: `task${i}`, };
-    });
 
-    let rowHeight = em2px(2.5);
-    let rowsInScreen = Math.ceil(em2px(50) / rowHeight);
-    let colWidth = em2px(4);
-    let colsInScreen = Math.ceil(em2px(80 - 20) / colWidth);
+    let rowHeight = em2px(this.rowHeight);
+    let rowsInScreen = Math.ceil(em2px(this.width) / rowHeight);
+    let colWidth = em2px(this.cellWidth);
+    let tasklistWidth = this.subjectWidth + this.idWidth;
+    let colsInScreen = Math.ceil(em2px(this.width - tasklistWidth) / colWidth);
 
     return {
       calendar: ds,
-      rows: rs,
-      costPls: [
-        { taskId: "1", date: now().add(1,"days").toDate(), cost: 7.0 },
-        { taskId: "1", date: now().add(2,"days").toDate(), cost: 7.0 },
-        { taskId: "1", date: now().add(3,"days").toDate(), cost: 7.0 },
-        { taskId: "2", date: now().add(4,"days").toDate(), cost: 7.0 },
-        { taskId: "2", date: now().add(5,"days").toDate(), cost: 3.0 },
-      ],
-      costAcs: [
-        { taskId: "1", date: now().add(1,"days").toDate(), cost: 7.0 },
-        { taskId: "1", date: now().add(2,"days").toDate(), cost: 7.0 },
-        { taskId: "2", date: now().add(3,"days").toDate(), cost: 7.0 },
-        { taskId: "2", date: now().add(4,"days").toDate(), cost: 3.0 },
-      ],
+      rows: getStorage("rows", [{ id: "", subject: "" }]),
+      costPls: getStorage("costPls", []).map(e => { e.date = new Date(e.date); return e; }),
+      costAcs: getStorage("costAcs",[]).map(e => { e.date = new Date(e.date); return e; }),
       scrollTop: 0,
       viewWindowRow: [0,rowsInScreen],
       viewWindowCol: [0,colsInScreen],
@@ -130,7 +168,26 @@ export default {
       timeoutCalculateCostPlanMap: null,
     }
   },
-  watch: { },
+  watch: { 
+    rows: {
+      handler(newval, oldval) { 
+        setStorage("rows", this.rows);
+      },
+      deep: true,
+    },
+    costPls: {
+      handler(newval, oldval) { 
+        setStorage("costPls", this.costPls);
+      },
+      deep: true,
+    },
+    costAcs: {
+      handler(newval, oldval) { 
+        setStorage("costAcs", this.costAcs);
+      },
+      deep: true,
+    }
+  },
   computed: {
     tasklistWidth: function() {
       return this.idWidth + this.subjectWidth;
@@ -221,10 +278,10 @@ export default {
       this.timeoutReview = setTimeout(() => {
         let scrollTop = this.$refs.root.scrollTop;
         let scrollLeft = this.$refs.root.scrollLeft;
-        let rowHeight = em2px(2.5);
-        let rowsInScreen = Math.ceil(em2px(50) / rowHeight);
-        let colWidth = em2px(4);
-        let colsInScreen = Math.ceil(em2px(80 - 20) / colWidth);
+        let rowHeight = em2px(this.rowHeight);
+        let rowsInScreen = Math.ceil(em2px(this.height) / rowHeight);
+        let colWidth = em2px(this.cellWidth);
+        let colsInScreen = Math.ceil(em2px(this.width - this.tasklistWidth) / colWidth);
         let rowsToHide = Math.floor(scrollTop / rowHeight);
         this.viewWindowRow = [ 
           Math.floor(scrollTop / rowHeight),
@@ -340,15 +397,33 @@ export default {
       return ({ id: id, subject: subject, });
     },
     changeRowId(row, newId) {
+      let oldId = row.id;
+
+      if(newId === "") {
+        row.id = "";
+        return;
+      }
+
       let existing = this.rows.filter(r => r.id === newId);
       if(existing.length > 0) {
-        let oldId = row.id;
         row.id = "@@tmp@@";
         row.id = oldId;
         return;
       }
 
       row.id = newId;
+      if(oldId !== "") {
+        this.costPls.forEach(p => {
+          if(p.taskId === oldId) {
+            p.taskId = newId;
+          }
+        });
+        this.costAcs.forEach(a => {
+          if(a.taskId === oldId) {
+            a.taskId = newId;
+          }
+        });
+      }
     },
     editCell(row,col,n) {
       this.focusRow = row;
@@ -365,6 +440,20 @@ export default {
         el.focus();
         el.select();
       });
+    },
+    isHoliday(date) {
+      let d = date.getDay();
+      return d === 0 || d === 6;
+    },
+    styleDate(j) {
+      let d = this.calendar[j].date;
+      return {
+        backgroundColor: (this.isHoliday(d))? `rgba(100,100,100,0.1)` : `transparent`,
+        width:`${this.cellWidth}em`,
+        flexDirection:`column`, 
+        position:`absolute`, 
+        left:`${(j * this.cellWidth)}em`
+      }
     }
   },
   mounted() {

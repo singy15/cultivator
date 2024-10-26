@@ -98,8 +98,7 @@ export default ganttChart;
             <template v-for="(date,j) in calendar">
               <template v-if="viewWindowCol[0] <= j && j <= viewWindowCol[1]">
                 <div class="box br" 
-                  :style="{width:`${cellWidth}em`, flexDirection:`column`, 
-                    position:`absolute`, left:`${(j * 4)}em`}">
+                  :style="styleDate(j)">
 
                   <template v-if="row.id !== ''">
 

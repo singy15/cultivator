@@ -4,9 +4,12 @@ import GanttChart from './components/GanttChart.vue'
 
 <template>
   <GanttChart 
-    :width="70" :height="50"
+    :width="140" :height="55"
     :row-height="2.5" :render-delay="100"
-    :cell-width="4"/>
+    :cell-width="4"
+    :start-date="new Date('2024-10-01')"
+    :end-date="new Date('2024-12-01')"
+    />
 </template>
 
 <style scoped>
