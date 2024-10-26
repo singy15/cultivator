@@ -23,18 +23,72 @@ export default ganttChart;
 
     <br/>
 
-    <div class="box br bb" :style="{width:`${tasklistWidth}em`, position:`sticky`, 
-        left:0, top:`${rowHeight * 1}em`, height:`${rowHeight}em`, 
+    <div class="box br" :style="{width:`${tasklistWidth}em`, position:`sticky`, 
+        left:0, top:`${rowHeight * 1}em`, height:`${rowHeight * 0.5}em`, 
         backgroundColor:`${backgroundColor}`, 
         zIndex:10000}">&nbsp;</div>
 
-    <template v-for="date in calendar">
-      <div class="box bb br" :style="{width:`${cellWidth}em`, 
+    <template v-for="(date,j) in calendar">
+      <div :class="[`box`, `bb`, 
+        (isSameMonth(calendar[j+1]?.date, calendar[j].date))?
+          `br` : undefined
+        ]" 
+        :style="{width:`${cellWidth}em`, 
           justifyContent:`center`, 
           position:`sticky`, top:`${rowHeight * 1}em`, 
           backgroundColor:`${backgroundColor}`, 
-          zIndex:`9990`}">
-        {{ formatDateYM(date.date) }}
+          whiteSpace:`pre`,
+          lineHeight:`${rowHeight * 0.5}em`,
+          height:`${rowHeight * 0.5}em`,
+          flexDirection:`column`,
+          textAlign:`center`,
+          left:(isSameMonth(calendar[j-1]?.date, calendar[j].date))?
+            `${tasklistWidth}em` : undefined,
+          zIndex:(isSameMonth(calendar[j-1]?.date, calendar[j].date))?
+            10000 : 9990,
+          }">
+
+        <div class="box" :style="{width:`${cellWidth}em`, 
+            lineHeight:`${rowHeight * 0.5}em`, 
+            justifyContent:`center`, 
+            textAlign:`center`,
+            }">
+          <span v-if="isSameMonth(calendar[j-1]?.date, calendar[j].date)"
+            :style="{lineHeight:`${rowHeight * 0.5}em`}">
+            {{ formatDateYM(date?.date) }}</span>
+        </div>
+
+      </div>
+    </template>
+
+    <br/>
+
+    <div class="box br bb" :style="{width:`${tasklistWidth}em`, position:`sticky`, 
+        left:0, top:`${rowHeight * 1.5}em`, height:`${rowHeight * 0.5}em`, 
+        backgroundColor:`${backgroundColor}`, 
+        zIndex:10000}">&nbsp;</div>
+
+    <template v-for="(date,j) in calendar">
+      <div class="box bb" :style="{width:`${cellWidth}em`, 
+          justifyContent:`center`, 
+          position:`sticky`, top:`${rowHeight * 1.5}em`, 
+          backgroundColor:`${backgroundColor}`, 
+          zIndex:`9990`,
+          whiteSpace:`pre`,
+          lineHeight:`${rowHeight * 0.5}em`,
+          height:`${rowHeight * 0.5}em`,
+          flexDirection:`column`,
+          textAlign:`center`,
+          }">
+
+        <div class="box br" :style="{width:`${cellWidth}em`, 
+            lineHeight:`${rowHeight * 0.5}em`, 
+            justifyContent:`center`, 
+            textAlign:`center`,
+            }">
+          <span :style="{lineHeight:`${rowHeight * 0.5}em`}">{{ formatDateD(date?.date) }}</span>
+        </div>
+
       </div>
     </template>
 
@@ -44,21 +98,24 @@ export default ganttChart;
 
     <div :style="{position:`absolute`, top:`${rowHeight * 2}em`, zIndex:0, 
         width:`${cellWidth * calendar.length}em`, 
-        height:`${rowHeight * rows.length}em`}">&nbsp;</div>
+        height:`${rowHeight * rowsDisplay.length}em`}">&nbsp;</div>
 
     <div v-if="viewWindowRow[0] >= 1" class="box" :style="{
       zIndex:0, height:`${rowHeight * viewWindowRow[0]}em`}">&nbsp;</div>
 
     <br v-if="viewWindowRow[0] >= 1" />
 
-    <template v-for="(row, i) in rows">
-      <template v-if="viewWindowRow[0] <= i && i <= viewWindowRow[1]">
+    <template v-for="(row, i) in rowsDisplay">
+      <template v-if="(viewWindowRow[0] <= i && i <= viewWindowRow[1]) || (isTotalRow(i))">
 
         <!-- subject -->
 
-        <div class="box br bb" @mouseover="mouseoverRow = i"
+        <div :class="[`box`, `br`, `bb`, 
+          (isTotalRow(i))? `bt` : undefined]" 
+          @mouseover="mouseoverRow = i"
           :style="{width:`${tasklistWidth}em`, position:`sticky`,
-            left:0, zIndex:999, backgroundColor:`${backgroundColor}`}">
+            left:0, zIndex:999, backgroundColor:`${backgroundColor}`,
+            bottom:(i === (rowsDisplay.length - 1))? 0 : undefined}">
 
           <!--
           <span v-if="isSubjectInputtable(i)"
@@ -90,11 +147,15 @@ export default ganttChart;
 
         <!-- cell -->
 
-        <div class="box bb" :style="{
-          display:`inline-block`, 
-          position:`relative`, width:`${cellWidth * calendar.length}em`}">
+        <div :class="[`box`, `bb`, 
+          (isTotalRow(i))? `bt` : undefined]" 
+          :style="{ display:`inline-block`, 
+          position:(isTotalRow(i))? `sticky` : `relative`, 
+          bottom:(isTotalRow(i))? 0 : undefined, 
+          width:`${cellWidth * calendar.length}em`,
+          backgroundColor:`${backgroundColor}`}">
 
-          <template v-if="viewWindowRow[0] <= i && i <= viewWindowRow[1]">
+          <template v-if="(viewWindowRow[0] <= i && i <= viewWindowRow[1]) || (isTotalRow(i))">
             <template v-for="(date,j) in calendar">
               <template v-if="viewWindowCol[0] <= j && j <= viewWindowCol[1]">
                 <div class="box br" 
@@ -180,7 +241,7 @@ export default ganttChart;
           </template>
         </div>
 
-        <br v-if="i !== (rows.length - 1)" />
+        <br v-if="i !== (rowsDisplay.length - 1)" />
 
       </template>
     </template>

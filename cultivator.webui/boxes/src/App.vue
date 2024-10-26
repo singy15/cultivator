@@ -6,9 +6,9 @@ import GanttChart from './components/GanttChart.vue'
   <GanttChart 
     :width="140" :height="55"
     :row-height="3" :render-delay="100"
-    :cell-width="4"
+    :cell-width="3"
     :start-date="new Date('2024-10-01')"
-    :end-date="new Date('2024-12-01')"
+    :end-date="new Date('2025-02-01')"
     />
 </template>
 

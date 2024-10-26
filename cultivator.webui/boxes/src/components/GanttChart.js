@@ -154,12 +154,6 @@ export default {
       return { date: d };
     });
 
-    let rowHeight = em2px(this.rowHeight);
-    let rowsInScreen = Math.ceil(em2px(this.width) / rowHeight);
-    let colWidth = em2px(this.cellWidth);
-    let tasklistWidth = this.subjectWidth + this.idWidth;
-    let colsInScreen = Math.ceil(em2px(this.width - tasklistWidth) / colWidth);
-
     return {
       calendar: ds,
       rows: getStorage("rows", [{ id: "", subject: "" }]),
@@ -167,8 +161,8 @@ export default {
       costAcs: getStorage("costAcs",[]).map(e => { e.date = new Date(e.date); return e; }),
       costEvs: getStorage("costEvs",[]).map(e => { e.date = new Date(e.date); return e; }),
       scrollTop: 0,
-      viewWindowRow: [0,rowsInScreen],
-      viewWindowCol: [0,colsInScreen],
+      viewWindowRow: [0,0],
+      viewWindowCol: [0,0],
       mouseoverRow: -1,
       mouseoverCol: -1,
       focusRow: -1,
@@ -206,6 +200,11 @@ export default {
     }
   },
   computed: {
+    rowsDisplay: function() {
+      let rs = [...this.rows];
+      rs.push({ id:"@", subject:"TOTAL" });
+      return rs;
+    },
     tasklistWidth: function() {
       return this.idWidth + this.subjectWidth;
     },
@@ -261,6 +260,56 @@ export default {
 
       console.log("costInputs", ed - sd);
 
+      cis.push(this.costInputsTotal);
+
+      return cis;
+    },
+    costInputsTotal: function() {
+      let vwr = this.viewWindowRow;
+      let vwc = this.viewWindowCol;
+      let sd = new Date();
+      let costsPl = new Array(this.calendar.length);
+      let costsAc = new Array(this.calendar.length);
+      let costsEv = new Array(this.calendar.length);
+
+      this.calendar.forEach((c,i) => {
+        if(vwc[0] > i || vwc[1] <= i) return;
+
+        costsPl[i] = [null, null];
+        costsAc[i] = [null, null];
+        costsEv[i] = [null, null];
+        
+        let curDt = c.date;
+
+        let pl = this.costPls.filter(
+          p => p.date.getTime() === curDt.getTime())
+          .reduce((m,x) => m + x.cost, 0.0);
+        let ac = this.costAcs.filter(
+          a => a.date.getTime() === curDt.getTime())
+          .reduce((m,x) => m + x.cost, 0.0);
+        let ev = this.costEvs.filter(
+          e => e.date.getTime() === curDt.getTime())
+          .reduce((m,x) => m + x.cost, 0.0);
+        
+        if(pl) { 
+          costsPl[i][0] = pl; 
+          costsPl[i][1] = null;
+        }
+        if(ac) { 
+          costsAc[i][0] = ac;
+          costsAc[i][1] = null;
+        }
+        if(ev) { 
+          costsEv[i][0] = ev;
+          costsEv[i][1] = null;
+        }
+      });
+
+      return [costsPl, costsAc, costsEv];
+      let ed = new Date();
+
+      console.log("costInputsTotal", ed - sd);
+
       return cis;
     },
     rootWidth: function() {
@@ -298,29 +347,44 @@ export default {
         return m;
       })();
     },
+    recalcurateViewWindow() {
+      let scrollTop = (this?.$refs?.root?.scrollTop)? this?.$refs?.root?.scrollTop : 0;
+      let scrollLeft = (this?.$refs?.root?.scrollLeft)? this?.$refs?.root?.scrollLeft : 0;
+      let rowHeight = em2px(this.rowHeight);
+      let rowsInScreen = Math.ceil(em2px(this.height) / rowHeight);
+      let colWidth = em2px(this.cellWidth);
+      let colsInScreen = Math.ceil(em2px(this.width - this.tasklistWidth) / colWidth);
+      let rowsToHide = Math.floor(scrollTop / rowHeight);
+      this.viewWindowRow = [ 
+        Math.floor(scrollTop / rowHeight),
+        Math.floor(scrollTop / rowHeight) + rowsInScreen];
+      this.viewWindowCol = [ 
+        Math.floor(scrollLeft / colWidth),  
+        Math.floor(scrollLeft / colWidth) + colsInScreen];
+      this.scrollTop = scrollTop;
+    },
     scroll() {
       if(this.timeoutReview) {
         clearTimeout(this.timeoutReview);
       }
       this.timeoutReview = setTimeout(() => {
-        let scrollTop = this.$refs.root.scrollTop;
-        let scrollLeft = this.$refs.root.scrollLeft;
-        let rowHeight = em2px(this.rowHeight);
-        let rowsInScreen = Math.ceil(em2px(this.height) / rowHeight);
-        let colWidth = em2px(this.cellWidth);
-        let colsInScreen = Math.ceil(em2px(this.width - this.tasklistWidth) / colWidth);
-        let rowsToHide = Math.floor(scrollTop / rowHeight);
-        this.viewWindowRow = [ 
-          Math.floor(scrollTop / rowHeight),
-          Math.floor(scrollTop / rowHeight) + rowsInScreen];
-        this.viewWindowCol = [ 
-          Math.floor(scrollLeft / colWidth),  
-          Math.floor(scrollLeft / colWidth) + colsInScreen];
-        this.scrollTop = scrollTop;
+        this.recalcurateViewWindow();
       }, this.renderDelay);
     },
     formatDateYM(date) {
-      return moment(date).format("MM/DD");
+      return moment(date).format("YY/MM");
+    },
+    formatDateM(date) {
+      if(date === undefined || date == null) { return ""; }
+      return moment(date).format("M");
+    },
+    formatDateD(date) {
+      return moment(date).format("D");
+    },
+    isSameMonth(date1, date2) {
+      if(date1 === undefined || date2 == null) { return true; }
+      if(date1 === undefined || date2 == null) { return true; }
+      return moment(date1).format("M") !== moment(date2).format("M");
     },
     modifyCost(e, i, n, j, costInput) {
       let newVal = e.target.value;
@@ -496,11 +560,15 @@ export default {
         width:`${this.cellWidth}em`,
         flexDirection:`column`, 
         position:`absolute`, 
-        left:`${(j * this.cellWidth)}em`
+        left:`${(j * this.cellWidth)}em`,
       }
+    },
+    isTotalRow(i) {
+      return i === (this.rowsDisplay.length - 1);
     }
   },
   mounted() {
     // this.recalculateCostPlanMap();
+    this.recalcurateViewWindow();
   }
 }
