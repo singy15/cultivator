@@ -101,6 +101,11 @@ export default {
       default: `rgba(255,255,200,0.7)`,
       required: false,
     },
+    colorCostEarnedBar: {
+      type: String,
+      default: `rgba(230,230,230,0.7)`,
+      required: false,
+    },
     cellWidth: {
       type: Number,
       default: 4,
@@ -136,6 +141,11 @@ export default {
       default: moment(new Date()).add(1, "months").toDate(),
       required: false,
     },
+    cellRows: {
+      type: Number,
+      default: 3,
+      required: false
+    }
   },
   components: {
   },
@@ -155,6 +165,7 @@ export default {
       rows: getStorage("rows", [{ id: "", subject: "" }]),
       costPls: getStorage("costPls", []).map(e => { e.date = new Date(e.date); return e; }),
       costAcs: getStorage("costAcs",[]).map(e => { e.date = new Date(e.date); return e; }),
+      costEvs: getStorage("costEvs",[]).map(e => { e.date = new Date(e.date); return e; }),
       scrollTop: 0,
       viewWindowRow: [0,rowsInScreen],
       viewWindowCol: [0,colsInScreen],
@@ -186,13 +197,21 @@ export default {
         setStorage("costAcs", this.costAcs);
       },
       deep: true,
+    },
+    costEvs: {
+      handler(newval, oldval) { 
+        setStorage("costEvs", this.costEvs);
+      },
+      deep: true,
     }
   },
   computed: {
     tasklistWidth: function() {
       return this.idWidth + this.subjectWidth;
     },
-
+    cssRowHeight: function() {
+      return `${this.rowHeight}em`;
+    },
     costInputs: function() {
       let vwr = this.viewWindowRow;
       let vwc = this.viewWindowCol;
@@ -200,6 +219,7 @@ export default {
       let cis = this.rows.map((r,j) => {
         let costsPl = new Array(this.calendar.length);
         let costsAc = new Array(this.calendar.length);
+        let costsEv = new Array(this.calendar.length);
 
         if(vwr[0] > j || vwr[1] <= j) return;
 
@@ -208,6 +228,7 @@ export default {
 
           costsPl[i] = [null, null];
           costsAc[i] = [null, null];
+          costsEv[i] = [null, null];
           
           let curDt = c.date;
 
@@ -217,6 +238,8 @@ export default {
             p => p.taskId === r.id && p.date.getTime() === curDt.getTime())[0];
           let ac = this.costAcs.filter(
             a => a.taskId === r.id && a.date.getTime() === curDt.getTime())[0];
+          let ev = this.costEvs.filter(
+            e => e.taskId === r.id && e.date.getTime() === curDt.getTime())[0];
           
           if(pl) { 
             costsPl[i][0] = pl.cost; 
@@ -226,9 +249,13 @@ export default {
             costsAc[i][0] = ac.cost;
             costsAc[i][1] = ac;
           }
+          if(ev) { 
+            costsEv[i][0] = ev.cost;
+            costsEv[i][1] = ev;
+          }
         });
 
-        return [costsPl, costsAc];
+        return [costsPl, costsAc, costsEv];
       });
       let ed = new Date();
 
@@ -299,6 +326,8 @@ export default {
       let newVal = e.target.value;
       let cost = parseFloat(newVal, 10);
 
+      if(newVal === "-") return;
+
       if(isNaN(cost)) {
         this.removeCostPlan(n, costInput[1]);
         return;
@@ -320,6 +349,8 @@ export default {
         return this.costPls;
       } else if(n === 1) {
         return this.costAcs;
+      } else if(n === 2) {
+        return this.costEvs;
       }
     },
     removeCostPlan(from, obj) {
@@ -327,6 +358,8 @@ export default {
         this.costPls = this.costPls.filter(p => p != obj);
       } else if(from === 1) {
         this.costAcs = this.costAcs.filter(a => a != obj);
+      } else if(from === 2) {
+        this.costEvs = this.costEvs.filter(a => a != obj);
       }
       // this.requestRecalculateCostPlanMap();
     },
@@ -353,19 +386,21 @@ export default {
       return this.mouseoverRow !== row && this.focusRow !== row;
     },
     styleCellReadonly(i,j,n) {
-      let halfRowHeight = `${this.rowHeight * 0.5}em`;
+      let oneRowHeight = `${this.rowHeight / this.cellRows}em`;
       let barColor;
       if(n === 0) {
         barColor = this.colorCostPlanBar;
       } else if(n === 1) {
         barColor = this.colorCostActualBar;
+      } else if(n === 2) {
+        barColor = this.colorCostEarnedBar;
       }
 
       return { 
         display:`inline-block`,
         textAlign:`center`, 
-        lineHeight: halfRowHeight, 
-        height: halfRowHeight, 
+        lineHeight: oneRowHeight, 
+        height: oneRowHeight, 
         backgroundColor: (!this.isBlank(this.costInputs[i]?.[n]?.[j]?.[0]))? 
           barColor : `transparent`, 
         cursor: `text`,
@@ -377,6 +412,8 @@ export default {
         barColor = this.colorCostPlanBar;
       } else if(n === 1) {
         barColor = this.colorCostActualBar;
+      } else if(n === 2) {
+        barColor = this.colorCostEarnedBar;
       }
 
       return {
@@ -423,6 +460,11 @@ export default {
             a.taskId = newId;
           }
         });
+        this.costEvs.forEach(e => {
+          if(e.taskId === oldId) {
+            e.taskId = newId;
+          }
+        });
       }
     },
     editCell(row,col,n) {
@@ -435,6 +477,8 @@ export default {
           el = this.$refs.cell0[0];
         } else if(n === 1) {
           el = this.$refs.cell1[0];
+        } else if(n === 2) {
+          el = this.$refs.cell2[0];
         }
 
         el.focus();

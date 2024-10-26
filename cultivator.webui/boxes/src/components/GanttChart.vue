@@ -112,6 +112,15 @@ export default ganttChart;
                   </span>
 
                   <span v-if="!isInputtable(i,j)" 
+                    :style="styleCellReadonly(i,j,2)"
+                    @click="editCell(i,j,2)">
+                    <span :style="{fontSize:`${cellFontSize}em`, whiteSpace:`pre`}">
+                      {{(isBlank(costInputs[i]?.[2]?.[j]?.[0]))? 
+                        "&nbsp;" : costInputs[i]?.[2]?.[j]?.[0]}}
+                    </span>
+                  </span>
+
+                  <span v-if="!isInputtable(i,j)" 
                     :style="styleCellReadonly(i,j,1)"
                     @click="editCell(i,j,1)">
                     <span :style="{fontSize:`${cellFontSize}em`, whiteSpace:`pre`}">
@@ -127,6 +136,14 @@ export default ganttChart;
                     @focus="focusRow = i; focusCol = j"
                     ref="cell0"
                     :style="styleCellInput(i,j,0)"/>
+
+                  <input v-if="isInputtable(i,j)" 
+                    :value="costInputs[i]?.[2]?.[j]?.[0]"
+                    @input="modifyCost($event, i, 2, j, costInputs[i]?.[2]?.[j])"
+                    @click="inputAllSelect($event)"
+                    @focus="focusRow = i; focusCol = j"
+                    ref="cell2"
+                    :style="styleCellInput(i,j,2)"/>
 
                   <input v-if="isInputtable(i,j)" 
                     :value="costInputs[i]?.[1]?.[j]?.[0]"
@@ -175,8 +192,8 @@ export default ganttChart;
 <style scoped>
   .box {
     border-color: #ccc;
-    line-height: 2.5em;
-    height: 2.5em;
+    line-height: v-bind(cssRowHeight);
+    height: v-bind(cssRowHeight);
   }
 
   .box-container {
