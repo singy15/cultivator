@@ -72,32 +72,25 @@ export default ganttChart;
             >{{ row.subject }}</span>
           -->
 
-          <!-- <input v-if="!isSubjectInputtable(i)"  -->
           <input
             @click="inputAllSelect($event)" 
-            @focus="focusRow = i"
             :value="row.id"
             @change="changeRowId(row, $event.target.value)"
-            @keydown.shift.enter="msg(1)"
-            @keydown.shift.delete="msg(2)"
+            @keydown.shift.enter="insertRow(i + 1, createRow('',''))"
+            @keydown.shift.delete="removeRow(i)"
             :style="{width:`${idWidth}em`, padding:`0px ${subjectPaddingPx}px`}" />
-          <!-- <input v-if="!isSubjectInputtable(i)"  -->
           <input
             v-model="row.subject" @click="inputAllSelect($event)" 
-            @focus="focusRow = i"
-            @keydown.shift.enter="msg(1)"
-            @keydown.shift.delete="msg(2)"
+            @keydown.shift.enter="insertRow(i + 1, createRow('',''))"
+            @keydown.shift.delete="removeRow(i)"
             :style="{width:`${subjectWidth}em`, borderLeft:`solid 1px #ccc`,
               padding:`0px ${subjectPaddingPx}px`}" />
-          <!--
-          <input v-model="row.subject" @click="inputAllSelect($event)"/>
-          -->
 
         </div>
 
         <!-- cell -->
 
-        <div class="box bb" @mouseover="mouseoverRow = i" :style="{
+        <div class="box bb" :style="{
           display:`inline-block`, 
           position:`relative`, width:`${cellWidth * calendar.length}em`}">
 
@@ -105,12 +98,14 @@ export default ganttChart;
             <template v-for="(date,j) in calendar">
               <template v-if="viewWindowCol[0] <= j && j <= viewWindowCol[1]">
                 <div class="box br" 
-                  @mouseover="mouseoverCol = j"
-                  :style="{width:`${4}em`, flexDirection:`column`, 
+                  :style="{width:`${cellWidth}em`, flexDirection:`column`, 
                     position:`absolute`, left:`${(j * 4)}em`}">
 
+                  <template v-if="row.id !== ''">
+
                   <span v-if="!isInputtable(i,j)" 
-                    :style="styleCellReadonly(i,j,0)">
+                    :style="styleCellReadonly(i,j,0)"
+                    @click="editCell(i,j,0)">
                     <span :style="{fontSize:`${cellFontSize}em`, whiteSpace:`pre`}">
                       {{(isBlank(costInputs[i][0][j][0]))? 
                         "&nbsp;" : costInputs[i][0][j][0]}}
@@ -118,7 +113,8 @@ export default ganttChart;
                   </span>
 
                   <span v-if="!isInputtable(i,j)" 
-                    :style="styleCellReadonly(i,j,1)">
+                    :style="styleCellReadonly(i,j,1)"
+                    @click="editCell(i,j,1)">
                     <span :style="{fontSize:`${cellFontSize}em`, whiteSpace:`pre`}">
                       {{(isBlank(costInputs[i][1][j][0]))? 
                         "&nbsp;" : costInputs[i][1][j][0]}}
@@ -130,6 +126,7 @@ export default ganttChart;
                     @input="modifyCost($event, i, 0, j, costInputs[i][0][j])"
                     @click="inputAllSelect($event)"
                     @focus="focusRow = i; focusCol = j"
+                    ref="cell0"
                     :style="styleCellInput(i,j,0)"/>
 
                   <input v-if="isInputtable(i,j)" 
@@ -137,6 +134,7 @@ export default ganttChart;
                     @input="modifyCost($event, i, 1, j, costInputs[i][1][j])"
                     @click="inputAllSelect($event)"
                     @focus="focusRow = i; focusCol = j"
+                    ref="cell1"
                     :style="styleCellInput(i,j,1)"/>
 
                   <!--
@@ -157,6 +155,8 @@ export default ganttChart;
                     @click="inputAllSelect($event)"
                     />
                   -->
+
+                  </template>
 
                 </div>
               </template>

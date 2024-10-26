@@ -298,12 +298,28 @@ export default {
       let existing = this.rows.filter(r => r.id === newId);
       if(existing.length > 0) {
         let oldId = row.id;
-        row.id = "";
+        row.id = "@@tmp@@";
         row.id = oldId;
         return;
       }
 
       row.id = newId;
+    },
+    editCell(row,col,n) {
+      this.focusRow = row;
+      this.focusCol = col;
+
+      this.$nextTick(() => {
+        let el = null;
+        if(n === 0) {
+          el = this.$refs.cell0[0];
+        } else if(n === 1) {
+          el = this.$refs.cell1[0];
+        }
+
+        el.focus();
+        el.select();
+      });
     }
   },
   mounted() {
