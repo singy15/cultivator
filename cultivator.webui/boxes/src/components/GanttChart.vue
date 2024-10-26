@@ -5,24 +5,34 @@ export default ganttChart;
 
 <template>
 
-  <div class="box-container ba" ref="root" 
-      style="overflow:auto; width:80em; height:50em; position:relative;"
-    @scroll="scroll">
+  <div class="box-container ba" ref="root" @scroll="scroll"
+      :style="{overflow:`auto`, width:`${width}em`, height:`${height}em`, 
+        position:`relative`}">
 
-    <div class="box br" :style="{width:tasklistWidth, position:`sticky`, left:0, top:0, 
-        height:`2.5em`, backgroundColor:`#fff`, zIndex:10000}">subject</div>
-    <div class="box bb" :style="{width:`${calendar.length * 4}em`, 
-        position:`sticky`, top:0, left:tasklistWidth, backgroundColor:`#fff`, 
+    <!-- header -->
+
+    <div class="box br" :style="{width:`${tasklistWidth}em`, position:`sticky`, 
+        left:0, top:0, height:`${rowHeight}em`, 
+        backgroundColor:`${backgroundColor}`, 
+        zIndex:10000}">subject</div>
+
+    <div class="box bb" :style="{width:`${calendar.length * cellWidth}em`, 
+        position:`sticky`, top:0, left:`${tasklistWidth}em`, 
+        backgroundColor:`${backgroundColor}`, 
         zIndex:`9990` }">date</div>
 
     <br/>
 
-    <div class="box br bb" :style="{width:tasklistWidth, position:`sticky`, left:0, 
-        top:`2.5em`, height:`2.5em`, backgroundColor:`#fff`, 
+    <div class="box br bb" :style="{width:`${tasklistWidth}em`, position:`sticky`, 
+        left:0, top:`${rowHeight * 1}em`, height:`${rowHeight}em`, 
+        backgroundColor:`${backgroundColor}`, 
         zIndex:10000}">&nbsp;</div>
+
     <template v-for="date in calendar">
-      <div class="box bb br" :style="{width:`${4}em`, justifyContent:`center`, 
-          position:`sticky`, top:`2.5em`, backgroundColor:`#fff`, 
+      <div class="box bb br" :style="{width:`${cellWidth}em`, 
+          justifyContent:`center`, 
+          position:`sticky`, top:`${rowHeight * 1}em`, 
+          backgroundColor:`${backgroundColor}`, 
           zIndex:`9990`}">
         {{ formatDateYM(date.date) }}
       </div>
@@ -30,83 +40,79 @@ export default ganttChart;
 
     <br/>
 
-    <div :style="{position:`absolute`, top:`${2.5 * 2}em`, zIndex:0, 
-        width:`${4 * calendar.length}em`, 
-        height:`${2.5 * calendar.length}em`}">&nbsp;</div>
+    <!-- spacer -->
 
-      <div v-if="viewWindowRow[0] >= 1" class="box" 
-          :style="{zIndex:0, height:`${2.5 * viewWindowRow[0]}em`}">
-      &nbsp;
-      </div>
-      <br v-if="viewWindowRow[0] >= 1" />
+    <div :style="{position:`absolute`, top:`${rowHeight * 2}em`, zIndex:0, 
+        width:`${cellWidth * calendar.length}em`, 
+        height:`${rowHeight * rows.length}em`}">&nbsp;</div>
+
+    <div v-if="viewWindowRow[0] >= 1" class="box" :style="{
+      zIndex:0, height:`${rowHeight * viewWindowRow[0]}em`}">&nbsp;</div>
+
+    <br v-if="viewWindowRow[0] >= 1" />
 
     <template v-for="(row, i) in rows">
       <template v-if="viewWindowRow[0] <= i && i <= viewWindowRow[1]">
-        <div class="box br bb" :style="{width:tasklistWidth, position:`sticky`, left:0,
-            zIndex:999, backgroundColor:`#fff`}" 
-          @mouseover="mouseoverRow = i">
 
-          <span v-if="mouseoverRow !== i && focusRow !== i">{{ row.subject }}</span>
-          <input v-if="mouseoverRow === i || focusRow === i" v-model="row.subject" 
-            @click="inputAllSelect($event)" 
+        <!-- subject -->
+
+        <div class="box br bb" @mouseover="mouseoverRow = i"
+          :style="{width:`${tasklistWidth}em`, position:`sticky`,
+            left:0, zIndex:999, backgroundColor:`${backgroundColor}`}">
+
+          <span v-if="mouseoverRow !== i && focusRow !== i">
+            {{ row.subject }}</span>
+          <input v-if="mouseoverRow === i || focusRow === i" 
+            v-model="row.subject" @click="inputAllSelect($event)" 
             @focus="focusRow = i"/>
-
           <!--
           <input v-model="row.subject" @click="inputAllSelect($event)"/>
           -->
+
         </div>
 
-        <div class="box bb" 
-          :style="{display:`inline-block`, position:`relative`, 
-            width:`${4 * calendar.length}em`, backgroundColor:`transparent`}"
-          @mouseover="mouseoverRow = i">
+        <!-- cell -->
+
+        <div class="box bb" @mouseover="mouseoverRow = i" :style="{
+          display:`inline-block`, 
+          position:`relative`, width:`${cellWidth * calendar.length}em`}">
+
           <template v-if="viewWindowRow[0] <= i && i <= viewWindowRow[1]">
             <template v-for="(date,j) in calendar">
               <template v-if="viewWindowCol[0] <= j && j <= viewWindowCol[1]">
-                <div class="box br" :style="{width:`${4}em`, 
-                  flexDirection:`column`, position:`absolute`, 
-                  left:`${(j * 4)}em`}" 
-                  @mouseover="mouseoverCol = j">
+                <div class="box br" @mouseover="mouseoverCol = j"
+                  :style="{width:`${4}em`, flexDirection:`column`, 
+                    position:`absolute`, left:`${(j * 4)}em`}">
 
-                  <span v-if="!(mouseoverCol === j && mouseoverRow === i) && !(focusCol === j && focusRow === i)" 
-                    :style="{
-                      textAlign:`center`, lineHeight:`1.20em`,
-                      backgroundColor:(!isBlank(costInputs[i][0][j][0]))? `rgba(200,200,255,0.7)` : `transparent`,
-                    }">
-                    <span style="font-size:0.8em; white-space:pre">
-                      {{(isBlank(costInputs[i][0][j][0]))? "&nbsp;" : costInputs[i][0][j][0]}}
+                  <span v-if="!isInputtable(i,j)" 
+                    :style="styleCellReadonly(i,j,0)">
+                    <span :style="{fontSize:`${cellFontSize}em`, whiteSpace:`pre`}">
+                      {{(isBlank(costInputs[i][0][j][0]))? 
+                        "&nbsp;" : costInputs[i][0][j][0]}}
                     </span>
                   </span>
 
-                  <span v-if="!(mouseoverCol === j && mouseoverRow === i) && !(focusCol === j && focusRow === i)" 
-                    :style="{
-                    textAlign:`center`, lineHeight:`1.25em`,
-                    backgroundColor:(!isBlank(costInputs[i][1][j][0]))? `rgba(255,255,200,0.7)` : `transparent`,
-                    }">
-                    <span style="font-size:0.8em; white-space:pre">
-                      {{(isBlank(costInputs[i][1][j][0]))? "&nbsp;" : costInputs[i][1][j][0]}}
+                  <span v-if="!isInputtable(i,j)" 
+                    :style="styleCellReadonly(i,j,1)">
+                    <span :style="{fontSize:`${cellFontSize}em`, whiteSpace:`pre`}">
+                      {{(isBlank(costInputs[i][1][j][0]))? 
+                        "&nbsp;" : costInputs[i][1][j][0]}}
                     </span>
                   </span>
 
-                  <input v-if="(mouseoverCol === j && mouseoverRow === i) || (focusCol === j && focusRow === i)" 
-                    :style="{textAlign:`center`, fontSize:`0.8em`, 
-                    lineHeight:`1.25em`,
-                    backgroundColor:(!isBlank(costInputs[i][0][j][0]))? `rgba(200,200,255,0.7)` : `transparent`,
-                    }" 
+                  <input v-if="isInputtable(i,j)" 
                     :value="costInputs[i][0][j][0]"
-                    @change="modifyCost($event, i, 0, j, costInputs[i][0][j])"
+                    @input="modifyCost($event, i, 0, j, costInputs[i][0][j])"
                     @click="inputAllSelect($event)"
                     @focus="focusRow = i; focusCol = j"
-                    />
-                  <input v-if="(mouseoverCol === j && mouseoverRow === i) || (focusCol === j && focusRow === i)" 
-                    :style="{textAlign:`center`, fontSize:`0.8em`,
-                    backgroundColor:(!isBlank(costInputs[i][1][j][0]))? `rgba(255,255,200,0.7)` : `transparent`,
-                    }" 
+                    :style="styleCellInput(i,j,0)"/>
+
+                  <input v-if="isInputtable(i,j)" 
                     :value="costInputs[i][1][j][0]"
-                    @change="modifyCost($event, i, 1, j, costInputs[i][1][j])"
+                    @input="modifyCost($event, i, 1, j, costInputs[i][1][j])"
                     @click="inputAllSelect($event)"
                     @focus="focusRow = i; focusCol = j"
-                    />
+                    :style="styleCellInput(i,j,1)"/>
 
                   <!--
                   <input
@@ -134,6 +140,7 @@ export default ganttChart;
         </div>
 
         <br v-if="i !== (rows.length - 1)" />
+
       </template>
     </template>
 

@@ -29,13 +29,65 @@ function em2px(em) {
 }
 
 export default {
+  props: {
+    width: {
+      type: Number,
+      default: 80,
+      required: true,
+    },
+    height: {
+      type: Number,
+      default: 50,
+      required: true,
+    },
+    rowHeight: {
+      type: Number,
+      default: 2.5,
+      required: true,
+    },
+    renderDelay: {
+      type: Number,
+      default: 300,
+      required: false
+    },
+    colorCostPlanBar: {
+      type: String,
+      default: `rgba(200,200,255,0.7)`,
+      required: false,
+    },
+    colorCostActualBar: {
+      type: String,
+      default: `rgba(255,255,200,0.7)`,
+      required: false,
+    },
+    cellWidth: {
+      type: Number,
+      default: 4,
+      required: true,
+    },
+    backgroundColor: {
+      type: String,
+      default: `#fff`,
+      required: false
+    },
+    tasklistWidth: {
+      type: Number,
+      default: 20,
+      required: false,
+    },
+    cellFontSize: {
+      type: Number,
+      default: 0.8,
+      required: false,
+    }
+  },
   components: {
   },
   data() {
-    let ds = dateRange(now().toDate(), 31 * 12).map(d => {
+    let ds = dateRange(now().toDate(), 31 * 4).map(d => {
       return { date: d };
     });
-    let rs = times(500, (i) => {
+    let rs = times(200, (i) => {
       return { id: `${i}`, subject: `task${i}`, };
     });
 
@@ -68,7 +120,6 @@ export default {
       focusRow: -1,
       focusCol: -1,
       timeoutReview: null,
-      tasklistWidth: `20em`,
     }
   },
   watch: { },
@@ -135,42 +186,92 @@ export default {
           Math.floor(scrollLeft / colWidth),  
           Math.floor(scrollLeft / colWidth) + colsInScreen];
         this.scrollTop = scrollTop;
-      }, 300);
+      }, this.renderDelay);
     },
     formatDateYM(date) {
       return moment(date).format("MM/DD");
     },
     modifyCost(e, i, n, j, costInput) {
       let newVal = e.target.value;
+      let cost = parseFloat(newVal, 10);
 
-      if(newVal === "") {
-        if(n === 0) {
-          this.costPls = this.costPls.filter(p => p != costInput[1]);
-        } else if(n === 1) {
-          this.costAcs = this.costAcs.filter(a => a != costInput[1]);
-        }
+      if(isNaN(cost)) {
+        this.removeCostPlan(n, costInput[1]);
         return;
       }
 
-      let cost = parseFloat(newVal, 10);
       if(costInput[1] != null) {
-        costInput.cost = cost;
+        costInput[1].cost = cost;
       } else {
-        let row = this.rows[i];
-        let d = this.calendar[j].date;
-        let costData = { taskId: row.id, date: d, cost: cost };
-        if(n === 0) {
-          this.costPls.push(costData);
-        } else if(n === 1) {
-          this.costAcs.push(costData);
-        }
+        let costData = this.createCostPlan(
+          this.rows[i].id, this.calendar[j].date, cost );
+        this.addCostPlan(n, costData);
       }
+    },
+    createCostPlan(taskId, date, cost) {
+      return { taskId: taskId, date: date, cost: cost };
+    },
+    getCostPlan(n) {
+      if(n === 0) {
+        return this.costPls;
+      } else if(n === 1) {
+        return this.costAcs;
+      }
+    },
+    removeCostPlan(from, obj) {
+      if(from === 0) {
+        this.costPls = this.costPls.filter(p => p != obj);
+      } else if(from === 1) {
+        this.costAcs = this.costAcs.filter(a => a != obj);
+      }
+    },
+    addCostPlan(to, obj) {
+      let target = this.getCostPlan(to);
+      target.push(obj);
     },
     inputAllSelect(e) {
       e.target.select();
     },
     isBlank(val) {
       return val == null || val === undefined; 
+    },
+    isInputtable(row, col) {
+      return (this.mouseoverCol === col && this.mouseoverRow === row)
+        || (this.focusCol === col && this.focusRow === row);
+    },
+    styleCellReadonly(i,j,n) {
+      let halfRowHeight = `${this.rowHeight * 0.5}em`;
+      let barColor;
+      if(n === 0) {
+        barColor = this.colorCostPlanBar;
+      } else if(n === 1) {
+        barColor = this.colorCostActualBar;
+      }
+
+      return { 
+        display:`inline-block`,
+        textAlign:`center`, 
+        lineHeight: halfRowHeight, 
+        height: halfRowHeight, 
+        backgroundColor: (!this.isBlank(this.costInputs[i][n][j][0]))? 
+          barColor : `transparent`, 
+      };
+    },
+    styleCellInput(i,j,n) {
+      let barColor;
+      if(n === 0) {
+        barColor = this.colorCostPlanBar;
+      } else if(n === 1) {
+        barColor = this.colorCostActualBar;
+      }
+
+      return {
+        textAlign:`center`, 
+        fontSize: `${this.cellFontSize}em`, 
+        height:`${this.rowHeight}em`, 
+        backgroundColor:(!this.isBlank(this.costInputs[i][n][j][0]))? 
+          barColor : `transparent`, 
+      };
     }
   },
   mounted() {
