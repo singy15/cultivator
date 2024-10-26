@@ -81,13 +81,29 @@ export default ganttChart;
           textAlign:`center`,
           }">
 
-        <div class="box br" :style="{width:`${cellWidth}em`, 
-            lineHeight:`${rowHeight * 0.5}em`, 
-            justifyContent:`center`, 
-            textAlign:`center`,
-            }">
-          <span :style="{lineHeight:`${rowHeight * 0.5}em`}">{{ formatDateD(date?.date) }}</span>
-        </div>
+        <template v-if="viewWindowCol[0] <= j && j <= viewWindowCol[1]">
+          <div class="box br" :style="{width:`${cellWidth}em`, 
+              lineHeight:`${rowHeight * 0.5}em`, 
+              justifyContent:`center`, 
+              textAlign:`center`,
+              flexDirection:`column`,
+              }">
+            <div class="box" :style="{lineHeight:`${rowHeight * 0.25}em`, 
+              justifyContent:`center`, 
+              }">
+              <span :style="{fontSize:`1.0em`,
+                color: (isHoliday(date?.date))? '#f00' : undefined,
+                }">{{ formatDateD(date?.date) }}</span>
+            </div>
+            <div class="box" :style="{lineHeight:`${rowHeight * 0.25}em`,
+              justifyContent:`center`, 
+              }">
+              <span :style="{fontSize:`0.6em`,
+                color: (isHoliday(date?.date))? '#f00' : undefined,
+                }">{{ formatDateDay(date?.date) }}</span>
+            </div>
+          </div>
+        </template>
 
       </div>
     </template>
@@ -132,14 +148,20 @@ export default ganttChart;
           <input
             @click="inputAllSelect($event)" 
             :value="row.id"
+            ref="inputId"
             @change="changeRowId(row, $event.target.value)"
             @keydown.shift.enter="insertRow(i + 1, createRow('',''))"
             @keydown.shift.delete="removeRow(i)"
+            @keydown.shift.up="moveRow(-1, i, 0)"
+            @keydown.shift.down="moveRow(1, i, 0)"
             :style="{width:`${idWidth}em`, padding:`0px ${subjectPaddingPx}px`}" />
           <input
+            ref="inputSubject"
             v-model="row.subject" @click="inputAllSelect($event)" 
             @keydown.shift.enter="insertRow(i + 1, createRow('',''))"
             @keydown.shift.delete="removeRow(i)"
+            @keydown.shift.up="moveRow(-1, i, 0)"
+            @keydown.shift.down="moveRow(1, i, 0)"
             :style="{width:`${subjectWidth}em`, borderLeft:`solid 1px #ccc`,
               padding:`0px ${subjectPaddingPx}px`}" />
 

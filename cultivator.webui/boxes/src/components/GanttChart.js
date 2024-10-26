@@ -381,6 +381,9 @@ export default {
     formatDateD(date) {
       return moment(date).format("D");
     },
+    formatDateDay(date) {
+      return moment(date).format("ddd");
+    },
     isSameMonth(date1, date2) {
       if(date1 === undefined || date2 == null) { return true; }
       if(date1 === undefined || date2 == null) { return true; }
@@ -565,6 +568,30 @@ export default {
     },
     isTotalRow(i) {
       return i === (this.rowsDisplay.length - 1);
+    },
+    moveRow(direction, i, k) {
+      if(direction > 0 && i === this.rows.length) return;
+      if(direction < 0 && i === 0) return;
+
+      let rowMove = this.rows[i];
+      let rowSwap = this.rows[i + direction];
+      this.rows.splice(i + direction, 1, rowMove);
+      this.rows.splice(i, 1, rowSwap);
+      this.$nextTick(() => {
+        this.editRow(i + direction, k);
+      });
+    },
+    editRow(i, k) {
+      let el;
+      if(k === 0) {
+        el = this.$refs.inputId[i - this.viewWindowRow[0] + 1];
+      } else if(k === 1) {
+        el = this.$refs.inputSubject[i - this.viewWindowRow[0] + 1];
+      }
+      if(el) {
+        el.focus();
+        el.select();
+      }
     }
   },
   mounted() {
