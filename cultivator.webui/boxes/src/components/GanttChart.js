@@ -168,7 +168,7 @@ export default {
       calendar: ds,
       rows: getStorage("rows", [{ id: "", subject: "" }]),
       rowsMeta: getStorage("rows", [{ id: "", subject: "" }])
-        .map(e => ({ row: e, fold: false, hide: false})),
+        .map(e => ({ row: e, fold: false })),
       costPls: getStorage("costPls", [])
         .map(e => { e.date = new Date(e.date); return e; }),
       costAcs: getStorage("costAcs",[])
@@ -227,7 +227,9 @@ export default {
         }
 
         let node = this.rowsStructure.ptr[this.rows[i].id];
-        if(!node.meta.hide) {
+        //if(!node.meta.hide) {
+        //if(!node.parent.meta.fold) {
+        if(this.branchVisible(node.row.id)) {
           rows++;
         }
       }
@@ -241,15 +243,20 @@ export default {
         if(this.rows[i].id === "") continue;
 
         let node = this.rowsStructure.ptr[this.rows[i].id];
-        if(node.meta.hide) {
+        // if(node.meta.hide) {
+        // if(node.parent.meta.fold) {
+        if(!this.branchVisible(node.row.id)) {
           rows++;
         }
       }
       return rows;
     },
     rowsStructure: function() {
-
-      let tree = {};
+      let root = { row: null, meta: { row: null, fold: false }, 
+        children: {}, parent: null, 
+        hasChildren: true
+      };
+      let tree = root.children;
       let ptr = {};
       this.rows.forEach((r,i) => {
         let path = r.id.split("/");
@@ -258,7 +265,9 @@ export default {
         path.forEach((p, j) => {
           if(p === "") return;
           if(cur[p] === undefined) {
-            let node = { row: r, meta: this.rowsMeta[i], children: {}, hasChildren: false};
+            let node = { row: r, meta: this.rowsMeta[i], children: {}, 
+              parent: (bef.length === 0)? root : ptr[bef.join("/")], 
+              hasChildren: false};
             cur[p] = node;
             ptr[r.id] = node;
           }
@@ -277,13 +286,13 @@ export default {
         ptr: ptr,
       };
 
-      console.log(rs);
       window.rs = rs;
 
       return rs;
     },
     rowsDisplay: function() {
-      let rs = [...this.rows];
+      let visibleRows = this.rows.filter(r => this.branchVisible(r.id));
+      let rs = [...visibleRows];
       rs.push({ id:"@", subject:"TOTAL" });
       return rs;
     },
@@ -433,7 +442,7 @@ export default {
       let scrollTop = (this?.$refs?.root?.scrollTop)? this?.$refs?.root?.scrollTop : 0;
       let scrollLeft = (this?.$refs?.root?.scrollLeft)? this?.$refs?.root?.scrollLeft : 0;
       let rowHeight = em2px(this.rowHeight);
-      let rowsInScreen = Math.ceil(em2px(this.height) / rowHeight);
+      let rowsInScreen = Math.floor((this.height - (this.rowHeight * 2.0)) / this.rowHeight);
       let colWidth = em2px(this.cellWidth);
       let colsInScreen = Math.ceil(em2px(this.width - this.tasklistWidth) / colWidth);
       let rowsToHide = Math.floor(scrollTop / rowHeight);
@@ -573,11 +582,13 @@ export default {
           barColor : `transparent`, 
       };
     },
-    insertRow(index, obj) {
+    insertRow(row, obj) {
+      let index = this.rows.indexOf(row) + 1;
       this.rows.splice(index, 0, obj);
-      this.rowsMeta.splice(index, 0, { row: obj, fold: false, hide: false});
+      this.rowsMeta.splice(index, 0, { row: obj, fold: false});
     },
-    removeRow(index) {
+    removeRow(row) {
+      let index = this.rows.indexOf(row);
       this.rows.splice(index, 1);
       this.rowsMeta.splice(index, 1);
     },
@@ -678,30 +689,74 @@ export default {
         el.select();
       }
     },
+    // fold(idx) {
+    //   let root = this.rows[idx];
+    //   this.rowsMeta[idx].fold = true;
+    //   for(let i = idx + 1; i < this.rows.length; i++) {
+    //     let row = this.rows[i];
+    //     if(row.id.startsWith(root.id + "/")/* || row.id === ""*/) {
+    //       this.rowsMeta[i].hide = true;
+    //     } else {
+    //       break;
+    //     }
+    //   }
+    // },
+    // unfold(idx) {
+    //   let root = this.rows[idx];
+    //   this.rowsMeta[idx].fold = false;
+    //   for(let i = idx + 1; i < this.rows.length; i++) {
+    //     let row = this.rows[i];
+    //     if(row.id.replace(root.id + "/", "").indexOf("/") < 0) {
+    //       this.rowsMeta[i].hide = false;
+    //     } else {
+    //       break;
+    //     }
+    //   }
+    // },
     toggleFold(id, setHideTo, root = true) {
       let node = this.rowsStructure.ptr[id];
-
-      console.log(id, node);
 
       if(root) {
         node.meta.fold = !node.meta.fold;
       }
 
-      if(!node.hasChildren) return;
+      // if(!node.hasChildren) return;
 
-      Object.keys(node.children).forEach(k => {
-        node.children[k].meta.hide = setHideTo;
-        if(setHideTo) {
-          this.toggleFold(node.children[k].row.id, setHideTo, false);
-        }
-      });
+      // Object.keys(node.children).forEach(k => {
+      //   node.children[k].meta.hide = setHideTo;
+      //   if(setHideTo) {
+      //     this.toggleFold(node.children[k].row.id, setHideTo, false);
+      //   }
+      // });
     },
     forceUpdateRowsStructure() {
       this.rowsStructureVersion++;
     },
+    branchVisible(id) {
+      if(id === "") { return true; }
+
+      let par = this.rowsStructure.ptr[id]?.parent;
+
+      if(!par) return true;
+
+      if(par.meta.fold) {
+        return false;
+      } else {
+        if(!par.parent) {
+          return true;
+        }
+      }
+      return this.branchVisible(par.row.id);
+    },
     isVisibleRow(row, i) {
-      return (this.viewWindowRow[0] <= i && i <= (this.viewWindowRow[1] + this.invisibleRowsUntilViewWindowBottom) 
-        && !this.rowsStructure.ptr[row.id]?.meta.hide) 
+      // return (this.viewWindowRow[0] <= i 
+      //   // && i <= (this.viewWindowRow[1] + this.invisibleRowsUntilViewWindowBottom) 
+      //   && i <= (this.viewWindowRow[1] + this.invisibleRowsRange(this.viewWindowRow[0], this.viewWindowRow[1]))
+      //   // && !this.rowsStructure.ptr[row.id]?.parent.meta.fold) 
+      //   && this.branchVisible(row.id)) 
+      //   || (this.isTotalRow(i));
+
+      return (this.viewWindowRow[0] <= i && i <= (this.viewWindowRow[1]))
         || (this.isTotalRow(i));
     },
     invisibleRowsRange(sidx, eidx) {
@@ -711,7 +766,8 @@ export default {
         if(this.rows[i].id === "") continue;
 
         let node = this.rowsStructure.ptr[this.rows[i].id];
-        if(node.meta.hide) {
+        // if(node.parent.meta.fold) {
+        if(!this.branchVisible(node.row.id)) {
           rows++;
         }
       }

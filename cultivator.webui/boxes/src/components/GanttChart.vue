@@ -121,7 +121,7 @@ export default ganttChart;
       zIndex:0, height:`${rowHeight * viewWindowRow[0]}em`}">&nbsp;</div>
       -->
     <div v-if="viewWindowRow[0] >= 1" class="box" :style="{
-      zIndex:0, height:`${rowHeight * visibleRowsUntilViewWindowTop}em`}">&nbsp;</div>
+      zIndex:0, height:`${rowHeight * viewWindowRow[0]}em`}">&nbsp;</div>
 
     <br v-if="viewWindowRow[0] >= 1" />
 
@@ -149,6 +149,7 @@ export default ganttChart;
             >{{ row.subject }}</span>
           -->
 
+          <!-- @click="(rowsMeta[i].fold)? unfold(i) : fold(i)" -->
           <span :style="{display:`inline-block`, width:`${rowHeadWidth}em`, 
             textAlign:`center`,
             padding:`0px 0px`,
@@ -163,8 +164,8 @@ export default ganttChart;
             :value="row.id"
             ref="inputId"
             @change="changeRowId(row, $event.target.value)"
-            @keydown.shift.enter="insertRow(i + 1, createRow('',''))"
-            @keydown.shift.delete="removeRow(i)"
+            @keydown.shift.enter="insertRow(row, createRow('',''))"
+            @keydown.shift.delete="removeRow(row)"
             @keydown.shift.up="moveRow(-1, i, 0)"
             @keydown.shift.down="moveRow(1, i, 0)"
             :style="{width:`${idWidth}em`, padding:`0px ${subjectPaddingPx}px`,
@@ -172,8 +173,8 @@ export default ganttChart;
           <input
             ref="inputSubject"
             v-model="row.subject" @click="inputAllSelect($event)" 
-            @keydown.shift.enter="insertRow(i + 1, createRow('',''))"
-            @keydown.shift.delete="removeRow(i)"
+            @keydown.shift.enter="insertRow(row, createRow('',''))"
+            @keydown.shift.delete="removeRow(row)"
             @keydown.shift.up="moveRow(-1, i, 0)"
             @keydown.shift.down="moveRow(1, i, 0)"
             :style="{width:`${subjectWidth}em`, borderLeft:`solid 1px #ccc`,
@@ -181,8 +182,8 @@ export default ganttChart;
           <input
             ref="inputAssignee"
             v-model="row.assignee" @click="inputAllSelect($event)" 
-            @keydown.shift.enter="insertRow(i + 1, createRow('',''))"
-            @keydown.shift.delete="removeRow(i)"
+            @keydown.shift.enter="insertRow(row, createRow('',''))"
+            @keydown.shift.delete="removeRow(row)"
             @keydown.shift.up="moveRow(-1, i, 0)"
             @keydown.shift.down="moveRow(1, i, 0)"
             :style="{width:`${assigneeWidth}em`, borderLeft:`solid 1px #ccc`,
