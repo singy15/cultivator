@@ -126,7 +126,7 @@ export default ganttChart;
     <br v-if="viewWindowRow[0] >= 1" />
 
     <template v-for="(row, i) in rowsDisplay">
-      <template v-if="isVisibleRow(row, i)">
+      <template v-if="isRowInViewWindow(row[0], i)">
 
         <!-- subject -->
 
@@ -141,12 +141,12 @@ export default ganttChart;
           <span v-if="isSubjectInputtable(i)"
             :style="{display:`inline-block`, boxSizing:`border-box`, 
               width:`${idWidth}em`, padding:`0px ${subjectPaddingPx}px`}"
-            >{{ row.id }}</span>
+            >{{ row[0].id }}</span>
           <span v-if="isSubjectInputtable(i)"
             :style="{display:`inline-block`, width:`${subjectWidth}em`,
               borderLeft:`solid 1px #ccc`, boxSizing:`border-box`, 
               padding:`0px ${subjectPaddingPx}px`}"
-            >{{ row.subject }}</span>
+            >{{ row[0].subject }}</span>
           -->
 
           <!-- @click="(rowsMeta[i].fold)? unfold(i) : fold(i)" -->
@@ -154,36 +154,36 @@ export default ganttChart;
             textAlign:`center`,
             padding:`0px 0px`,
             cursor:`pointer`}"
-            @click="toggleFold(row.id, !(rowsStructure.ptr[row.id]?.meta.fold))">
-            {{ (rowsStructure.ptr[row.id]?.hasChildren)? 
-              ((rowsStructure.ptr[row.id]?.meta.fold)? "+" : "-") : 
+            @click="toggleFold(row[0].id, !(rowsStructure.ptr[row[0].id]?.meta.fold))">
+            {{ (rowsStructure.ptr[row[0].id]?.hasChildren)? 
+              ((rowsStructure.ptr[row[0].id]?.meta.fold)? "+" : "-") : 
               "" }}
           </span>
           <input
             @click="inputAllSelect($event)" 
-            :value="row.id"
+            :value="row[0].id"
             ref="inputId"
-            @change="changeRowId(row, $event.target.value)"
-            @keydown.shift.enter="insertRow(row, createRow('',''))"
-            @keydown.shift.delete="removeRow(row)"
+            @change="changeRowId(row[0], $event.target.value)"
+            @keydown.shift.enter="insertRow(row[0], createRow('',''))"
+            @keydown.shift.delete="removeRow(row[0])"
             @keydown.shift.up="moveRow(-1, i, 0)"
             @keydown.shift.down="moveRow(1, i, 0)"
             :style="{width:`${idWidth}em`, padding:`0px ${subjectPaddingPx}px`,
               borderLeft:`solid 1px #ccc` }" />
           <input
             ref="inputSubject"
-            v-model="row.subject" @click="inputAllSelect($event)" 
-            @keydown.shift.enter="insertRow(row, createRow('',''))"
-            @keydown.shift.delete="removeRow(row)"
+            v-model="row[0].subject" @click="inputAllSelect($event)" 
+            @keydown.shift.enter="insertRow(row[0], createRow('',''))"
+            @keydown.shift.delete="removeRow(row[0])"
             @keydown.shift.up="moveRow(-1, i, 0)"
             @keydown.shift.down="moveRow(1, i, 0)"
             :style="{width:`${subjectWidth}em`, borderLeft:`solid 1px #ccc`,
               padding:`0px ${subjectPaddingPx}px`}" />
           <input
             ref="inputAssignee"
-            v-model="row.assignee" @click="inputAllSelect($event)" 
-            @keydown.shift.enter="insertRow(row, createRow('',''))"
-            @keydown.shift.delete="removeRow(row)"
+            v-model="row[0].assignee" @click="inputAllSelect($event)" 
+            @keydown.shift.enter="insertRow(row[0], createRow('',''))"
+            @keydown.shift.delete="removeRow(row[0])"
             @keydown.shift.up="moveRow(-1, i, 0)"
             @keydown.shift.down="moveRow(1, i, 0)"
             :style="{width:`${assigneeWidth}em`, borderLeft:`solid 1px #ccc`,
@@ -207,7 +207,7 @@ export default ganttChart;
                 <div class="box br" 
                   :style="styleDate(j)">
 
-                  <template v-if="row.id !== ''">
+                  <template v-if="row[0].id !== ''">
 
                   <span v-if="!isInputtable(i,j)" 
                     :style="styleCellReadonly(i,j,0)"
