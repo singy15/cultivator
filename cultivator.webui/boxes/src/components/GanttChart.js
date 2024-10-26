@@ -116,6 +116,11 @@ export default {
       default: `#fff`,
       required: false
     },
+    rowHeadWidth: {
+      type: Number,
+      default: 1,
+      required: false,
+    },
     idWidth: {
       type: Number,
       default: 5,
@@ -123,7 +128,12 @@ export default {
     },
     subjectWidth: {
       type: Number,
-      default: 15,
+      default: 20,
+      required: false,
+    },
+    assigneeWidth: {
+      type: Number,
+      default: 5,
       required: false,
     },
     cellFontSize: {
@@ -157,9 +167,14 @@ export default {
     return {
       calendar: ds,
       rows: getStorage("rows", [{ id: "", subject: "" }]),
-      costPls: getStorage("costPls", []).map(e => { e.date = new Date(e.date); return e; }),
-      costAcs: getStorage("costAcs",[]).map(e => { e.date = new Date(e.date); return e; }),
-      costEvs: getStorage("costEvs",[]).map(e => { e.date = new Date(e.date); return e; }),
+      rowsMeta: getStorage("rows", [{ id: "", subject: "" }])
+        .map(e => ({ row: e, fold: false, hide: false})),
+      costPls: getStorage("costPls", [])
+        .map(e => { e.date = new Date(e.date); return e; }),
+      costAcs: getStorage("costAcs",[])
+        .map(e => { e.date = new Date(e.date); return e; }),
+      costEvs: getStorage("costEvs",[])
+        .map(e => { e.date = new Date(e.date); return e; }),
       scrollTop: 0,
       viewWindowRow: [0,0],
       viewWindowCol: [0,0],
@@ -171,6 +186,7 @@ export default {
       subjectPaddingPx: 5,
       costPlanMap: {},
       timeoutCalculateCostPlanMap: null,
+      rowsStructureVersion: 0,
     }
   },
   watch: { 
@@ -200,13 +216,79 @@ export default {
     }
   },
   computed: {
+    visibleRowsUntilViewWindowTop: function() {
+      let vwrt = this.viewWindowRow[0];
+      let rows = 0;
+      for(let i = 0; i < vwrt; i++) {
+        if(this.rows[i] === undefined) return;
+        if(this.rows[i].id === "") {
+          rows++;
+          continue;
+        }
+
+        let node = this.rowsStructure.ptr[this.rows[i].id];
+        if(!node.meta.hide) {
+          rows++;
+        }
+      }
+      return rows;
+    },
+    invisibleRowsUntilViewWindowBottom: function() {
+      let vwrt = this.viewWindowRow[1];
+      let rows = 0;
+      for(let i = 0; i < vwrt; i++) {
+        if(this.rows[i] === undefined) continue;
+        if(this.rows[i].id === "") continue;
+
+        let node = this.rowsStructure.ptr[this.rows[i].id];
+        if(node.meta.hide) {
+          rows++;
+        }
+      }
+      return rows;
+    },
+    rowsStructure: function() {
+
+      let tree = {};
+      let ptr = {};
+      this.rows.forEach((r,i) => {
+        let path = r.id.split("/");
+        let cur = tree;
+        let bef = [];
+        path.forEach((p, j) => {
+          if(p === "") return;
+          if(cur[p] === undefined) {
+            let node = { row: r, meta: this.rowsMeta[i], children: {}, hasChildren: false};
+            cur[p] = node;
+            ptr[r.id] = node;
+          }
+
+          if(j > 0) {
+            ptr[bef.join("/")].hasChildren = true;
+          }
+
+          bef.push(p);
+
+          cur = cur[p].children;
+        });
+      });
+      let rs = {
+        tree: tree,
+        ptr: ptr,
+      };
+
+      console.log(rs);
+      window.rs = rs;
+
+      return rs;
+    },
     rowsDisplay: function() {
       let rs = [...this.rows];
       rs.push({ id:"@", subject:"TOTAL" });
       return rs;
     },
     tasklistWidth: function() {
-      return this.idWidth + this.subjectWidth;
+      return this.rowHeadWidth + this.idWidth + this.subjectWidth + this.assigneeWidth;
     },
     cssRowHeight: function() {
       return `${this.rowHeight}em`;
@@ -493,9 +575,11 @@ export default {
     },
     insertRow(index, obj) {
       this.rows.splice(index, 0, obj);
+      this.rowsMeta.splice(index, 0, { row: obj, fold: false, hide: false});
     },
     removeRow(index) {
       this.rows.splice(index, 1);
+      this.rowsMeta.splice(index, 1);
     },
     createRow(id, subject) {
       return ({ id: id, subject: subject, });
@@ -583,16 +667,56 @@ export default {
     },
     editRow(i, k) {
       let el;
+      let targetIndex = i - this.viewWindowRow[0] - this.invisibleRowsRange(this.viewWindowRow[0], i) + 1;
       if(k === 0) {
-        el = this.$refs.inputId[i - this.viewWindowRow[0] + 1];
+        el = this.$refs.inputId[targetIndex];
       } else if(k === 1) {
-        el = this.$refs.inputSubject[i - this.viewWindowRow[0] + 1];
+        el = this.$refs.inputSubject[targetIndex];
       }
       if(el) {
         el.focus();
         el.select();
       }
-    }
+    },
+    toggleFold(id, setHideTo, root = true) {
+      let node = this.rowsStructure.ptr[id];
+
+      console.log(id, node);
+
+      if(root) {
+        node.meta.fold = !node.meta.fold;
+      }
+
+      if(!node.hasChildren) return;
+
+      Object.keys(node.children).forEach(k => {
+        node.children[k].meta.hide = setHideTo;
+        if(setHideTo) {
+          this.toggleFold(node.children[k].row.id, setHideTo, false);
+        }
+      });
+    },
+    forceUpdateRowsStructure() {
+      this.rowsStructureVersion++;
+    },
+    isVisibleRow(row, i) {
+      return (this.viewWindowRow[0] <= i && i <= (this.viewWindowRow[1] + this.invisibleRowsUntilViewWindowBottom) 
+        && !this.rowsStructure.ptr[row.id]?.meta.hide) 
+        || (this.isTotalRow(i));
+    },
+    invisibleRowsRange(sidx, eidx) {
+      let rows = 0;
+      for(let i = sidx; i < eidx; i++) {
+        if(this.rows[i] === undefined) continue;
+        if(this.rows[i].id === "") continue;
+
+        let node = this.rowsStructure.ptr[this.rows[i].id];
+        if(node.meta.hide) {
+          rows++;
+        }
+      }
+      return rows;
+    },
   },
   mounted() {
     // this.recalculateCostPlanMap();

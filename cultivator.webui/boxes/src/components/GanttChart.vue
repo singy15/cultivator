@@ -116,13 +116,17 @@ export default ganttChart;
         width:`${cellWidth * calendar.length}em`, 
         height:`${rowHeight * rowsDisplay.length}em`}">&nbsp;</div>
 
+<!--
     <div v-if="viewWindowRow[0] >= 1" class="box" :style="{
       zIndex:0, height:`${rowHeight * viewWindowRow[0]}em`}">&nbsp;</div>
+      -->
+    <div v-if="viewWindowRow[0] >= 1" class="box" :style="{
+      zIndex:0, height:`${rowHeight * visibleRowsUntilViewWindowTop}em`}">&nbsp;</div>
 
     <br v-if="viewWindowRow[0] >= 1" />
 
     <template v-for="(row, i) in rowsDisplay">
-      <template v-if="(viewWindowRow[0] <= i && i <= viewWindowRow[1]) || (isTotalRow(i))">
+      <template v-if="isVisibleRow(row, i)">
 
         <!-- subject -->
 
@@ -145,6 +149,15 @@ export default ganttChart;
             >{{ row.subject }}</span>
           -->
 
+          <span :style="{display:`inline-block`, width:`${rowHeadWidth}em`, 
+            textAlign:`center`,
+            padding:`0px 0px`,
+            cursor:`pointer`}"
+            @click="toggleFold(row.id, !(rowsStructure.ptr[row.id]?.meta.fold))">
+            {{ (rowsStructure.ptr[row.id]?.hasChildren)? 
+              ((rowsStructure.ptr[row.id]?.meta.fold)? "+" : "-") : 
+              "" }}
+          </span>
           <input
             @click="inputAllSelect($event)" 
             :value="row.id"
@@ -154,7 +167,8 @@ export default ganttChart;
             @keydown.shift.delete="removeRow(i)"
             @keydown.shift.up="moveRow(-1, i, 0)"
             @keydown.shift.down="moveRow(1, i, 0)"
-            :style="{width:`${idWidth}em`, padding:`0px ${subjectPaddingPx}px`}" />
+            :style="{width:`${idWidth}em`, padding:`0px ${subjectPaddingPx}px`,
+              borderLeft:`solid 1px #ccc` }" />
           <input
             ref="inputSubject"
             v-model="row.subject" @click="inputAllSelect($event)" 
@@ -164,7 +178,15 @@ export default ganttChart;
             @keydown.shift.down="moveRow(1, i, 0)"
             :style="{width:`${subjectWidth}em`, borderLeft:`solid 1px #ccc`,
               padding:`0px ${subjectPaddingPx}px`}" />
-
+          <input
+            ref="inputAssignee"
+            v-model="row.assignee" @click="inputAllSelect($event)" 
+            @keydown.shift.enter="insertRow(i + 1, createRow('',''))"
+            @keydown.shift.delete="removeRow(i)"
+            @keydown.shift.up="moveRow(-1, i, 0)"
+            @keydown.shift.down="moveRow(1, i, 0)"
+            :style="{width:`${assigneeWidth}em`, borderLeft:`solid 1px #ccc`,
+              padding:`0px ${subjectPaddingPx}px`}" />
         </div>
 
         <!-- cell -->
@@ -177,7 +199,8 @@ export default ganttChart;
           width:`${cellWidth * calendar.length}em`,
           backgroundColor:`${backgroundColor}`}">
 
-          <template v-if="(viewWindowRow[0] <= i && i <= viewWindowRow[1]) || (isTotalRow(i))">
+          <!-- <template v-if="(viewWindowRow[0] <= i && i <= viewWindowRow[1]) || (isTotalRow(i))"> -->
+          <template v-if="true">
             <template v-for="(date,j) in calendar">
               <template v-if="viewWindowCol[0] <= j && j <= viewWindowCol[1]">
                 <div class="box br" 
