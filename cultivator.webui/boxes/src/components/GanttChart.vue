@@ -107,8 +107,8 @@ export default ganttChart;
                     :style="styleCellReadonly(i,j,0)"
                     @click="editCell(i,j,0)">
                     <span :style="{fontSize:`${cellFontSize}em`, whiteSpace:`pre`}">
-                      {{(isBlank(costInputs[i][0][j][0]))? 
-                        "&nbsp;" : costInputs[i][0][j][0]}}
+                      {{(isBlank(costInputs[i]?.[0]?.[j]?.[0]))? 
+                        "&nbsp;" : costInputs[i]?.[0]?.[j]?.[0]}}
                     </span>
                   </span>
 
@@ -116,22 +116,22 @@ export default ganttChart;
                     :style="styleCellReadonly(i,j,1)"
                     @click="editCell(i,j,1)">
                     <span :style="{fontSize:`${cellFontSize}em`, whiteSpace:`pre`}">
-                      {{(isBlank(costInputs[i][1][j][0]))? 
-                        "&nbsp;" : costInputs[i][1][j][0]}}
+                      {{(isBlank(costInputs[i]?.[1]?.[j]?.[0]))? 
+                        "&nbsp;" : costInputs[i]?.[1]?.[j]?.[0]}}
                     </span>
                   </span>
 
                   <input v-if="isInputtable(i,j)" 
-                    :value="costInputs[i][0][j][0]"
-                    @input="modifyCost($event, i, 0, j, costInputs[i][0][j])"
+                    :value="costInputs[i]?.[0]?.[j]?.[0]"
+                    @input="modifyCost($event, i, 0, j, costInputs[i]?.[0]?.[j])"
                     @click="inputAllSelect($event)"
                     @focus="focusRow = i; focusCol = j"
                     ref="cell0"
                     :style="styleCellInput(i,j,0)"/>
 
                   <input v-if="isInputtable(i,j)" 
-                    :value="costInputs[i][1][j][0]"
-                    @input="modifyCost($event, i, 1, j, costInputs[i][1][j])"
+                    :value="costInputs[i]?.[1]?.[j]?.[0]"
+                    @input="modifyCost($event, i, 1, j, costInputs[i]?.[1]?.[j])"
                     @click="inputAllSelect($event)"
                     @focus="focusRow = i; focusCol = j"
                     ref="cell1"

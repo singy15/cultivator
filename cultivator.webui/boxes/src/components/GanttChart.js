@@ -126,6 +126,8 @@ export default {
       focusCol: -1,
       timeoutReview: null,
       subjectPaddingPx: 5,
+      costPlanMap: {},
+      timeoutCalculateCostPlanMap: null,
     }
   },
   watch: { },
@@ -133,18 +135,27 @@ export default {
     tasklistWidth: function() {
       return this.idWidth + this.subjectWidth;
     },
+
     costInputs: function() {
+      let vwr = this.viewWindowRow;
+      let vwc = this.viewWindowCol;
       let sd = new Date();
-      let cis = this.rows.map(r => {
+      let cis = this.rows.map((r,j) => {
         let costsPl = new Array(this.calendar.length);
         let costsAc = new Array(this.calendar.length);
 
+        if(vwr[0] > j || vwr[1] <= j) return;
+
         this.calendar.forEach((c,i) => {
+          if(vwc[0] > i || vwc[1] <= i) return;
+
           costsPl[i] = [null, null];
           costsAc[i] = [null, null];
           
           let curDt = c.date;
 
+          // let pl = this.costPlanMap[r.id]?.[curDt.getTime()]?.[0];
+          // let ac = this.costPlanMap[r.id]?.[curDt.getTime()]?.[1];
           let pl = this.costPls.filter(
             p => p.taskId === r.id && p.date.getTime() === curDt.getTime())[0];
           let ac = this.costAcs.filter(
@@ -164,7 +175,7 @@ export default {
       });
       let ed = new Date();
 
-      console.log(ed - sd);
+      console.log("costInputs", ed - sd);
 
       return cis;
     },
@@ -175,6 +186,33 @@ export default {
   methods: {
     msg(val) {
       console.log(val);
+    },
+    requestRecalculateCostPlanMap() {
+      this.timeoutCalculateCostPlanMap = setTimeout(() => {
+        this.recalculateCostPlanMap();
+        this.timeoutCalculateCostPlanMap = null;
+      }, 500);
+    },
+    recalculateCostPlanMap() {
+      this.costPlanMap = (() => {
+        let sd = new Date();
+        let m = {};
+        this.rows.forEach(r => {
+          if(r.id === "") return;
+          m[r.id] = {};
+          this.calendar.forEach(c => {
+            let curDt = c.date;
+            let pl = this.costPls.filter(
+              p => p.taskId === r.id && p.date.getTime() === curDt.getTime())[0];
+            let ac = this.costAcs.filter(
+              a => a.taskId === r.id && a.date.getTime() === curDt.getTime())[0];
+            m[r.id][curDt.getTime()] = [pl, ac];
+          });
+        });
+        let ed = new Date();
+        console.log("costPlanMap", ed - sd);
+        return m;
+      })();
     },
     scroll() {
       if(this.timeoutReview) {
@@ -233,10 +271,16 @@ export default {
       } else if(from === 1) {
         this.costAcs = this.costAcs.filter(a => a != obj);
       }
+      // this.requestRecalculateCostPlanMap();
     },
     addCostPlan(to, obj) {
       let target = this.getCostPlan(to);
       target.push(obj);
+
+      if(this.timeoutCalculateCostPlanMap != null) {
+        clearTimeout(this.timeoutCalculateCostPlanMap);
+      }
+      // this.requestRecalculateCostPlanMap();
     },
     inputAllSelect(e) {
       e.target.select();
@@ -265,8 +309,9 @@ export default {
         textAlign:`center`, 
         lineHeight: halfRowHeight, 
         height: halfRowHeight, 
-        backgroundColor: (!this.isBlank(this.costInputs[i][n][j][0]))? 
+        backgroundColor: (!this.isBlank(this.costInputs[i]?.[n]?.[j]?.[0]))? 
           barColor : `transparent`, 
+        cursor: `text`,
       };
     },
     styleCellInput(i,j,n) {
@@ -281,7 +326,7 @@ export default {
         textAlign:`center`, 
         fontSize: `${this.cellFontSize}em`, 
         height:`${this.rowHeight}em`, 
-        backgroundColor:(!this.isBlank(this.costInputs[i][n][j][0]))? 
+        backgroundColor:(!this.isBlank(this.costInputs[i]?.[n]?.[j]?.[0]))? 
           barColor : `transparent`, 
       };
     },
@@ -323,5 +368,6 @@ export default {
     }
   },
   mounted() {
+    // this.recalculateCostPlanMap();
   }
 }
