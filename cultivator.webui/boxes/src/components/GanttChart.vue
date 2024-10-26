@@ -60,11 +60,35 @@ export default ganttChart;
           :style="{width:`${tasklistWidth}em`, position:`sticky`,
             left:0, zIndex:999, backgroundColor:`${backgroundColor}`}">
 
-          <span v-if="mouseoverRow !== i && focusRow !== i">
-            {{ row.subject }}</span>
-          <input v-if="mouseoverRow === i || focusRow === i" 
+          <!--
+          <span v-if="isSubjectInputtable(i)"
+            :style="{display:`inline-block`, boxSizing:`border-box`, 
+              width:`${idWidth}em`, padding:`0px ${subjectPaddingPx}px`}"
+            >{{ row.id }}</span>
+          <span v-if="isSubjectInputtable(i)"
+            :style="{display:`inline-block`, width:`${subjectWidth}em`,
+              borderLeft:`solid 1px #ccc`, boxSizing:`border-box`, 
+              padding:`0px ${subjectPaddingPx}px`}"
+            >{{ row.subject }}</span>
+          -->
+
+          <!-- <input v-if="!isSubjectInputtable(i)"  -->
+          <input
+            @click="inputAllSelect($event)" 
+            @focus="focusRow = i"
+            :value="row.id"
+            @change="changeRowId(row, $event.target.value)"
+            @keydown.shift.enter="msg(1)"
+            @keydown.shift.delete="msg(2)"
+            :style="{width:`${idWidth}em`, padding:`0px ${subjectPaddingPx}px`}" />
+          <!-- <input v-if="!isSubjectInputtable(i)"  -->
+          <input
             v-model="row.subject" @click="inputAllSelect($event)" 
-            @focus="focusRow = i"/>
+            @focus="focusRow = i"
+            @keydown.shift.enter="msg(1)"
+            @keydown.shift.delete="msg(2)"
+            :style="{width:`${subjectWidth}em`, borderLeft:`solid 1px #ccc`,
+              padding:`0px ${subjectPaddingPx}px`}" />
           <!--
           <input v-model="row.subject" @click="inputAllSelect($event)"/>
           -->
@@ -80,7 +104,8 @@ export default ganttChart;
           <template v-if="viewWindowRow[0] <= i && i <= viewWindowRow[1]">
             <template v-for="(date,j) in calendar">
               <template v-if="viewWindowCol[0] <= j && j <= viewWindowCol[1]">
-                <div class="box br" @mouseover="mouseoverCol = j"
+                <div class="box br" 
+                  @mouseover="mouseoverCol = j"
                   :style="{width:`${4}em`, flexDirection:`column`, 
                     position:`absolute`, left:`${(j * 4)}em`}">
 

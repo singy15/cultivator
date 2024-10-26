@@ -70,9 +70,14 @@ export default {
       default: `#fff`,
       required: false
     },
-    tasklistWidth: {
+    idWidth: {
       type: Number,
-      default: 20,
+      default: 5,
+      required: false,
+    },
+    subjectWidth: {
+      type: Number,
+      default: 15,
       required: false,
     },
     cellFontSize: {
@@ -120,10 +125,14 @@ export default {
       focusRow: -1,
       focusCol: -1,
       timeoutReview: null,
+      subjectPaddingPx: 5,
     }
   },
   watch: { },
   computed: {
+    tasklistWidth: function() {
+      return this.idWidth + this.subjectWidth;
+    },
     costInputs: function() {
       let sd = new Date();
       let cis = this.rows.map(r => {
@@ -239,6 +248,9 @@ export default {
       return (this.mouseoverCol === col && this.mouseoverRow === row)
         || (this.focusCol === col && this.focusRow === row);
     },
+    isSubjectInputtable(row) {
+      return this.mouseoverRow !== row && this.focusRow !== row;
+    },
     styleCellReadonly(i,j,n) {
       let halfRowHeight = `${this.rowHeight * 0.5}em`;
       let barColor;
@@ -272,6 +284,26 @@ export default {
         backgroundColor:(!this.isBlank(this.costInputs[i][n][j][0]))? 
           barColor : `transparent`, 
       };
+    },
+    insertRow(index, obj) {
+      this.rows.splice(index, 0, obj);
+    },
+    removeRow(index) {
+      this.rows.splice(index, 1);
+    },
+    createRow(id, subject) {
+      return ({ id: id, subject: subject, });
+    },
+    changeRowId(row, newId) {
+      let existing = this.rows.filter(r => r.id === newId);
+      if(existing.length > 0) {
+        let oldId = row.id;
+        row.id = "";
+        row.id = oldId;
+        return;
+      }
+
+      row.id = newId;
     }
   },
   mounted() {
