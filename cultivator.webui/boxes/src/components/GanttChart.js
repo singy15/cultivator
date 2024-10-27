@@ -424,6 +424,10 @@ export default {
     formatDateDay(date) {
       return moment(date).format("ddd");
     },
+    isToday(date) {
+      return moment(date).format("YYYY-MM-DD") 
+        === moment(new Date()).format("YYYY-MM-DD");
+    },
     isSameMonth(date1, date2) {
       if(date1 === undefined || date2 == null) { return true; }
       if(date1 === undefined || date2 == null) { return true; }
@@ -650,8 +654,16 @@ export default {
     },
     styleDate(j) {
       let d = this.calendar[j].date;
+      let bg;
+      if(this.isToday(d)) {
+        bg = `rgba(100,100,200,0.1)`;
+      } else if(this.isHoliday(d)) {
+        bg = `rgba(100,100,100,0.1)`;
+      } else {
+        bg = `transparent`;
+      }
       return {
-        backgroundColor: (this.isHoliday(d))? `rgba(100,100,100,0.1)` : `transparent`,
+        backgroundColor: bg,
         width:`${this.cellWidth}em`,
         flexDirection:`column`, 
         position:`absolute`, 
