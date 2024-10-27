@@ -1,5 +1,9 @@
 <script setup>
-import GanttChart from './components/GanttChart.vue'
+import GanttChart from './components/GanttChart.vue';
+import moment from "moment";
+
+let sd = moment(new Date("2024-10-01")).add(-7, "days").toDate();
+let ed = moment(new Date("2024-10-01")).add(31 * 6, "days").toDate();
 </script>
 
 <template>

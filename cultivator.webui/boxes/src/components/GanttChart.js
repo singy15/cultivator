@@ -69,6 +69,19 @@ function em2px(em) {
     .getPropertyValue('font-size').match(/\d+/)[0]);
 }
 
+const getCircularReplacer = () => {
+  const seen = new WeakSet();
+  return (key, value) => {
+    if (typeof value === "object" && value !== null) {
+      if (seen.has(value)) {
+        return;
+      }
+      seen.add(value);
+    }
+    return value;
+  };
+};
+
 export default {
   props: {
     width: {
@@ -187,6 +200,7 @@ export default {
       costPlanMap: {},
       timeoutCalculateCostPlanMap: null,
       rowsStructureVersion: 0,
+      rowsStructure: { tree: {}, ptr: {} },
     }
   },
   watch: { 
@@ -216,48 +230,6 @@ export default {
     }
   },
   computed: {
-    rowsStructure: function() {
-      let sd = new Date();
-      let root = { row: null, meta: { row: null, fold: false }, 
-        children: {}, parent: null, 
-        hasChildren: true
-      };
-      let tree = root.children;
-      let ptr = {};
-      this.rows.forEach((r,i) => {
-        let path = r.id.split("/");
-        let cur = tree;
-        let bef = [];
-        path.forEach((p, j) => {
-          if(p === "") return;
-          if(cur[p] === undefined) {
-            let node = { row: r, meta: this.rowsMeta[i], children: {}, 
-              parent: (bef.length === 0)? root : ptr[bef.join("/")], 
-              hasChildren: false};
-            cur[p] = node;
-            ptr[r.id] = node;
-          }
-
-          if(j > 0) {
-            ptr[bef.join("/")].hasChildren = true;
-          }
-
-          bef.push(p);
-
-          cur = cur[p].children;
-        });
-      });
-      let rs = {
-        tree: tree,
-        ptr: ptr,
-      };
-
-      let ed = new Date();
-
-      console.log("rowsStructure", ed - sd);
-
-      return rs;
-    },
     rowsDisplay: function() {
       let rs = [];
       this.rows.forEach((r, i) => {
@@ -563,17 +535,37 @@ export default {
       let index = this.rows.indexOf(row) + 1;
       this.rows.splice(index, 0, obj);
       this.rowsMeta.splice(index, 0, { row: obj, fold: false});
+      this.recalculateRowsStructure();
     },
     removeRow(row) {
       let index = this.rows.indexOf(row);
       this.rows.splice(index, 1);
       this.rowsMeta.splice(index, 1);
+      this.recalculateRowsStructure();
     },
     createRow(id, subject) {
       return ({ id: id, subject: subject, });
     },
+    siblings(row, cur = []) {
+      cur.push(row);
+      let node = this.rowsStructure.ptr[row.id];
+      if(!node) return cur;
+
+      if(node.hasChildren) {
+        Object.keys(node.children).forEach(k => {
+          let cnode = node.children[k];
+          cur.push(cnode.row);
+          if(cnode.hasChildren) {
+            this.siblings(cnode.row, cur);
+          }
+        });
+      }
+      return cur;
+    },
     changeRowId(row, newId) {
       let oldId = row.id;
+
+      let sibs = this.siblings(row);
 
       if(newId === "") {
         row.id = "";
@@ -587,24 +579,52 @@ export default {
         return;
       }
 
-      row.id = newId;
-      if(oldId !== "") {
-        this.costPls.forEach(p => {
-          if(p.taskId === oldId) {
-            p.taskId = newId;
-          }
-        });
-        this.costAcs.forEach(a => {
-          if(a.taskId === oldId) {
-            a.taskId = newId;
-          }
-        });
-        this.costEvs.forEach(e => {
-          if(e.taskId === oldId) {
-            e.taskId = newId;
-          }
-        });
-      }
+      sibs.forEach(s => {
+
+        let oid = s.id;
+        let nid = oid.replace(oldId, newId);
+
+        // console.log(oid, nid);
+
+        s.id = nid;
+        if(oldId !== "") {
+          this.costPls.forEach(p => {
+            if(p.taskId === oid) {
+              p.taskId = nid;
+            }
+          });
+          this.costAcs.forEach(a => {
+            if(a.taskId === oid) {
+              a.taskId = nid;
+            }
+          });
+          this.costEvs.forEach(e => {
+            if(e.taskId === oid) {
+              e.taskId = nid;
+            }
+          });
+        }
+
+
+      });
+
+
+
+      // console.log("id changed");
+      // console.log("rowsStructure current", oldStructure);
+      // let node = oldStructure.ptr[oldId];
+      // console.log("current node", node);
+      // if(node?.hasChildren) {
+      //   let keys = Object.keys(node.children);
+      //   keys.forEach(k => {
+      //     let cnode = oldStructure.ptr[k];
+      //     // this.changeRowId(cnode.row, cnode.row.id.replace(oldId, newId));
+      //     console.log(cnode.row.id, cnode.row.id.replace(oldId, newId));
+      //   });
+      // }
+
+
+      this.recalculateRowsStructure();
     },
     editCell(row,col,n) {
       this.focusRow = row;
@@ -663,8 +683,15 @@ export default {
       let ri1 = this.rows.indexOf(r1);
       let ri2 = this.rows.indexOf(r2);
 
+      if(ri1 < ri2) {
+        let inSibling = this.siblings(r1).map(s => s.id).indexOf(r2.id) > 0;
+        if(inSibling) return;
+      }
+
       this.rows.splice(ri1, 1, r2);
       this.rows.splice(ri2, 1, r1);
+
+      this.recalculateRowsStructure();
 
       this.$nextTick(() => {
         let idx;
@@ -809,11 +836,54 @@ export default {
 
         return true;
       });
-    }
+    },
+    recalculateRowsStructure() {
+      let sd = new Date();
+      let root = { row: null, meta: { row: null, fold: false }, 
+        children: {}, parent: null, 
+        hasChildren: true
+      };
+      let tree = root.children;
+      let ptr = {};
+      this.rows.forEach((r,i) => {
+        let path = r.id.split("/");
+        let cur = tree;
+        let bef = [];
+        path.forEach((p, j) => {
+          if(p === "") return;
+          if(cur[p] === undefined) {
+            let node = { row: r, meta: this.rowsMeta[i], children: {}, 
+              parent: (bef.length === 0)? root : ptr[bef.join("/")], 
+              hasChildren: false};
+            cur[p] = node;
+            ptr[r.id] = node;
+          }
+
+          if(j > 0) {
+            ptr[bef.join("/")].hasChildren = true;
+          }
+
+          bef.push(p);
+
+          cur = cur[p].children;
+        });
+      });
+      let rs = {
+        tree: tree,
+        ptr: ptr,
+      };
+
+      let ed = new Date();
+
+      console.log("rowsStructure", ed - sd);
+
+      this.rowsStructure = rs;
+    },
   },
   mounted() {
     // this.recalculateCostPlanMap();
     this.recalcurateViewWindow();
     this.vacuum();
+    this.recalculateRowsStructure();
   }
 }
