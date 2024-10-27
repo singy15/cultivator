@@ -266,6 +266,8 @@ export default {
         }
       });
       rs.push([{ id:"@", subject:"TOTAL" }, -1]);
+
+      window.rs = rs;
       return rs;
     },
     tasklistWidth: function() {
@@ -278,7 +280,8 @@ export default {
       let vwr = this.viewWindowRow;
       let vwc = this.viewWindowCol;
       let sd = new Date();
-      let cis = this.rows.map((r,j) => {
+      let rows = this.rowsDisplay.slice(0, this.rowsDisplay.length - 1);
+      let cis = rows.map((r,j) => {
         let costsPl = new Array(this.calendar.length);
         let costsAc = new Array(this.calendar.length);
         let costsEv = new Array(this.calendar.length);
@@ -297,11 +300,11 @@ export default {
           // let pl = this.costPlanMap[r.id]?.[curDt.getTime()]?.[0];
           // let ac = this.costPlanMap[r.id]?.[curDt.getTime()]?.[1];
           let pl = this.costPls.filter(
-            p => p.taskId === r.id && p.date.getTime() === curDt.getTime())[0];
+            p => p.taskId === r[0].id && p.date.getTime() === curDt.getTime())[0];
           let ac = this.costAcs.filter(
-            a => a.taskId === r.id && a.date.getTime() === curDt.getTime())[0];
+            a => a.taskId === r[0].id && a.date.getTime() === curDt.getTime())[0];
           let ev = this.costEvs.filter(
-            e => e.taskId === r.id && e.date.getTime() === curDt.getTime())[0];
+            e => e.taskId === r[0].id && e.date.getTime() === curDt.getTime())[0];
           
           if(pl) { 
             costsPl[i][0] = pl.cost; 
@@ -324,6 +327,8 @@ export default {
       console.log("costInputs", ed - sd);
 
       cis.push(this.costInputsTotal);
+
+      window.cis = cis;
 
       return cis;
     },
@@ -636,30 +641,66 @@ export default {
     isTotalRow(i) {
       return i === (this.rowsDisplay.length - 1);
     },
-    moveRow(direction, i, k) {
-      if(direction > 0 && i === this.rows.length) return;
-      if(direction < 0 && i === 0) return;
+    moveRow(direction, r1, r2, k) {
+      // if(direction > 0 && i === this.rows.length) return;
+      // if(direction < 0 && i === 0) return;
 
-      let rowMove = this.rows[i];
-      let rowSwap = this.rows[i + direction];
-      this.rows.splice(i + direction, 1, rowMove);
-      this.rows.splice(i, 1, rowSwap);
+      // let rowMove = this.rows[i];
+      // let rowSwap = this.rows[i + direction];
+      // this.rows.splice(i + direction, 1, rowMove);
+      // this.rows.splice(i, 1, rowSwap);
+      // this.$nextTick(() => {
+      //   this.editRow(i + direction, k);
+      // });
+
+      if(!r1) return;
+      if(!r2) return;
+
+      // total row
+      if(r1.id === "@") return;
+      if(r2.id === "@") return;
+
+      let ri1 = this.rows.indexOf(r1);
+      let ri2 = this.rows.indexOf(r2);
+
+      this.rows.splice(ri1, 1, r2);
+      this.rows.splice(ri2, 1, r1);
+
       this.$nextTick(() => {
-        this.editRow(i + direction, k);
+        let idx;
+        for(let j = 0; j < this.rowsDisplay.length; j++) {
+          if(this.rowsDisplay[j][0] == r1) {
+            idx = j;
+            break;
+          }
+        }
+        this.editRow(idx, k);
       });
+
     },
     editRow(i, k) {
+      // let el;
+      // let targetIndex = i - this.viewWindowRow[0] - this.invisibleRowsRange(this.viewWindowRow[0], i) + 1;
+      // if(k === 0) {
+      //   el = this.$refs.inputId[targetIndex];
+      // } else if(k === 1) {
+      //   el = this.$refs.inputSubject[targetIndex];
+      // }
+      // if(el) {
+      //   el.focus();
+      //   el.select();
+      // }
+
       let el;
-      let targetIndex = i - this.viewWindowRow[0] - this.invisibleRowsRange(this.viewWindowRow[0], i) + 1;
       if(k === 0) {
-        el = this.$refs.inputId[targetIndex];
+        el = this.$refs[`inputId-${i}`][0];
       } else if(k === 1) {
-        el = this.$refs.inputSubject[targetIndex];
+        el = this.$refs[`inputSubject-${i}`][0];
+      } else if(k === 2) {
+        el = this.$refs[`inputAssignee-${i}`][0];
       }
-      if(el) {
-        el.focus();
-        el.select();
-      }
+      el.focus();
+      el.select();
     },
     // fold(idx) {
     //   let root = this.rows[idx];
@@ -729,9 +770,50 @@ export default {
       }
       return rows;
     },
+    vacuum() {
+      let ids = {};
+      this.rows.forEach(r => {
+        if(r.id === "") return;
+        ids[r.id] = r.id;
+      });
+      this.costPls = this.costPls.filter(p => ids[p.taskId]);
+      this.costAcs = this.costAcs.filter(p => ids[p.taskId]);
+      this.costEvs = this.costEvs.filter(p => ids[p.taskId]);
+
+      let dupPl = {};
+      this.costPls = this.costPls.filter(p => {
+        if(dupPl?.[p.taskId]?.[p.date]) { return false; }
+
+        if(dupPl[p.taskId] === undefined) dupPl[p.taskId] = {};
+        if(dupPl[p.taskId][p.date] === undefined) dupPl[p.taskId][p.date] = true;
+
+        return true;
+      });
+
+      let dupAc = {};
+      this.costAcs = this.costAcs.filter(p => {
+        if(dupAc?.[p.taskId]?.[p.date]) { return false; }
+
+        if(dupAc[p.taskId] === undefined) dupAc[p.taskId] = {};
+        if(dupAc[p.taskId][p.date] === undefined) dupAc[p.taskId][p.date] = true;
+
+        return true;
+      });
+
+      let dupEv = {};
+      this.costEvs = this.costEvs.filter(p => {
+        if(dupEv?.[p.taskId]?.[p.date]) { return false; }
+
+        if(dupEv[p.taskId] === undefined) dupEv[p.taskId] = {};
+        if(dupEv[p.taskId][p.date] === undefined) dupEv[p.taskId][p.date] = true;
+
+        return true;
+      });
+    }
   },
   mounted() {
     // this.recalculateCostPlanMap();
     this.recalcurateViewWindow();
+    this.vacuum();
   }
 }

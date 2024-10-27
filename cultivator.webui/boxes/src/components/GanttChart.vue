@@ -162,30 +162,30 @@ export default ganttChart;
           <input
             @click="inputAllSelect($event)" 
             :value="row[0].id"
-            ref="inputId"
+            :ref="`inputId-${i}`"
             @change="changeRowId(row[0], $event.target.value)"
             @keydown.shift.enter="insertRow(row[0], createRow('',''))"
             @keydown.shift.delete="removeRow(row[0])"
-            @keydown.shift.up="moveRow(-1, i, 0)"
-            @keydown.shift.down="moveRow(1, i, 0)"
+            @keydown.shift.up="moveRow(-1, rowsDisplay[i][0], rowsDisplay[i-1][0], 0)"
+            @keydown.shift.down="moveRow(1, rowsDisplay[i][0], rowsDisplay[i+1][0], 0)"
             :style="{width:`${idWidth}em`, padding:`0px ${subjectPaddingPx}px`,
               borderLeft:`solid 1px #ccc` }" />
           <input
-            ref="inputSubject"
+            :ref="`inputSubject-${i}`"
             v-model="row[0].subject" @click="inputAllSelect($event)" 
             @keydown.shift.enter="insertRow(row[0], createRow('',''))"
             @keydown.shift.delete="removeRow(row[0])"
-            @keydown.shift.up="moveRow(-1, i, 0)"
-            @keydown.shift.down="moveRow(1, i, 0)"
+            @keydown.shift.up="moveRow(-1, rowsDisplay[i][0], rowsDisplay[i-1][0], 1)"
+            @keydown.shift.down="moveRow(1, rowsDisplay[i][0], rowsDisplay[i+1][0], 1)"
             :style="{width:`${subjectWidth}em`, borderLeft:`solid 1px #ccc`,
               padding:`0px ${subjectPaddingPx}px`}" />
           <input
-            ref="inputAssignee"
+            :ref="`inputAssignee-${i}`"
             v-model="row[0].assignee" @click="inputAllSelect($event)" 
             @keydown.shift.enter="insertRow(row[0], createRow('',''))"
             @keydown.shift.delete="removeRow(row[0])"
-            @keydown.shift.up="moveRow(-1, i, 0)"
-            @keydown.shift.down="moveRow(1, i, 0)"
+            @keydown.shift.up="moveRow(-1, rowsDisplay[i][0], rowsDisplay[i-1][0], 2)"
+            @keydown.shift.down="moveRow(1, rowsDisplay[i][0], rowsDisplay[i+1][0], 2)"
             :style="{width:`${assigneeWidth}em`, borderLeft:`solid 1px #ccc`,
               padding:`0px ${subjectPaddingPx}px`}" />
         </div>
