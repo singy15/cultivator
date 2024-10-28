@@ -360,6 +360,26 @@ export default {
     msg(val) {
       console.log(val);
     },
+    serializeData() {
+      let data = {
+        rows: this.rows,
+        rowsMeta: this.rowsMeta,
+        costPls: this.costPls,
+        costAcs: this.costAcs,
+        costEvs: this.costEvs,
+      };
+      return JSON.stringify(data);
+    },
+    importData(rows, costPls, costAcs, costEvs, rowsMeta = null) {
+      this.rows = rows;
+      this.rowsMeta = (rowsMeta)? rowsMeta : rows.map(e => ({ row: e, fold: false }));
+      this.costPls = this.costPls;
+      this.costAcs = this.costAcs;
+      this.costEvs = this.costEvs;
+      this.recalcurateViewWindow();
+      this.vacuum();
+      this.recalculateRowsStructure();
+    },
     requestRecalculateCostPlanMap() {
       this.timeoutCalculateCostPlanMap = setTimeout(() => {
         this.recalculateCostPlanMap();
