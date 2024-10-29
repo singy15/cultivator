@@ -375,11 +375,18 @@ export default {
     msg(val) {
       console.log(val);
     },
-    calcPercentage(dividee, divider) {
+    formatPercent(dividee, divider) {
       if(dividee == null || dividee === undefined
         || divider == null || divider === undefined) return "";
       if(divider === 0.0) return "";
       return `${Math.round((100.0) * (dividee / divider))}%`;
+    },
+    formatCostState(actual, plan) {
+      if(actual == null || actual === undefined
+          || plan == null || plan === undefined) return "";
+      if(actual > plan) {
+        return "AC!";
+      }
     },
     serializeData() {
       let data = {

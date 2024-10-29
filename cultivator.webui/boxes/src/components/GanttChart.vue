@@ -193,7 +193,6 @@ export default ganttChart;
             padding:`0px 0px`,
             borderLeft:`solid 1px #ccc`,
             florDirection: `column`,
-            fontSize:`${0.8}em`,
             lineHeight:`${(rowHeight * 1) / 3.0}em`,
             }" >
             <!--
@@ -203,7 +202,8 @@ export default ganttChart;
             <br>
             <span>AC:{{ rowsStatistics?.[row[0].id]?.[2] }}</span>
             -->
-            <span>{{ calcPercentage(rowsStatistics?.[row[0].id]?.[2], rowsStatistics?.[row[0].id]?.[0]) }}</span>
+            <span style="font-size:0.8em;">{{ formatPercent(rowsStatistics?.[row[0].id]?.[2], rowsStatistics?.[row[0].id]?.[0]) }}</span>
+            <span style="font-size:0.8em; color:white; background-color:rgba(255,100,100);">{{ formatCostState(rowsStatistics?.[row[0].id]?.[1], rowsStatistics?.[row[0].id]?.[0]) }}</span>
           </span>
         </div>
 
