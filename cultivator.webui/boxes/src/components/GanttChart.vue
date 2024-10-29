@@ -188,6 +188,23 @@ export default ganttChart;
             @keydown.shift.down="moveRow(1, rowsDisplay[i][0], rowsDisplay[i+1][0], 2)"
             :style="{width:`${assigneeWidth}em`, borderLeft:`solid 1px #ccc`,
               padding:`0px ${subjectPaddingPx}px`}" />
+          <span :style="{display:`inline-block`, width:`${statisticsWidth}em`, 
+            textAlign:`left`,
+            padding:`0px 0px`,
+            borderLeft:`solid 1px #ccc`,
+            florDirection: `column`,
+            fontSize:`${0.8}em`,
+            lineHeight:`${(rowHeight * 1) / 3.0}em`,
+            }" >
+            <!--
+            <span>PV:{{ rowsStatistics?.[row[0].id]?.[0] }}</span>
+            <br>
+            <span>EV:{{ rowsStatistics?.[row[0].id]?.[1] }}</span>
+            <br>
+            <span>AC:{{ rowsStatistics?.[row[0].id]?.[2] }}</span>
+            -->
+            <span>{{ calcPercentage(rowsStatistics?.[row[0].id]?.[2], rowsStatistics?.[row[0].id]?.[0]) }}</span>
+          </span>
         </div>
 
         <!-- cell -->

@@ -149,6 +149,11 @@ export default {
       default: 5,
       required: false,
     },
+    statisticsWidth: {
+      type: Number,
+      default: 5,
+      required: false,
+    },
     cellFontSize: {
       type: Number,
       default: 0.8,
@@ -199,8 +204,18 @@ export default {
       subjectPaddingPx: 5,
       costPlanMap: {},
       timeoutCalculateCostPlanMap: null,
+      timeoutCalculateCostMap: null,
       rowsStructureVersion: 0,
       rowsStructure: { tree: {}, ptr: {} },
+      costMap: {
+        cpmr: {},
+        cpmc: {},
+        camr: {},
+        camc: {},
+        cemr: {},
+        cemc: {}
+      },
+      rowsStatistics: { }
     }
   },
   watch: { 
@@ -243,7 +258,7 @@ export default {
       return rs;
     },
     tasklistWidth: function() {
-      return this.rowHeadWidth + this.idWidth + this.subjectWidth + this.assigneeWidth;
+      return this.rowHeadWidth + this.idWidth + this.subjectWidth + this.assigneeWidth + this.statisticsWidth;
     },
     cssRowHeight: function() {
       return `${this.rowHeight}em`;
@@ -360,6 +375,12 @@ export default {
     msg(val) {
       console.log(val);
     },
+    calcPercentage(dividee, divider) {
+      if(dividee == null || dividee === undefined
+        || divider == null || divider === undefined) return "";
+      if(divider === 0.0) return "";
+      return `${Math.round((100.0) * (dividee / divider))}%`;
+    },
     serializeData() {
       let data = {
         rows: this.rows,
@@ -379,33 +400,164 @@ export default {
       this.recalcurateViewWindow();
       this.vacuum();
       this.recalculateRowsStructure();
+      this.recalculateCostMap();
+      this.recalculateRowsStatistics();
     },
-    requestRecalculateCostPlanMap() {
-      this.timeoutCalculateCostPlanMap = setTimeout(() => {
-        this.recalculateCostPlanMap();
-        this.timeoutCalculateCostPlanMap = null;
+    requestRecalculateCostMap() {
+      // this.timeoutCalculateCostPlanMap = setTimeout(() => {
+      //   this.recalculateCostPlanMap();
+      //   this.timeoutCalculateCostPlanMap = null;
+      // }, 500);
+
+      this.timeoutCalculateCostMap = setTimeout(() => {
+        this.recalculateCostMap();
+        this.timeoutCalculateCostMap = null;
       }, 500);
     },
-    recalculateCostPlanMap() {
-      this.costPlanMap = (() => {
-        let sd = new Date();
-        let m = {};
-        this.rows.forEach(r => {
-          if(r.id === "") return;
-          m[r.id] = {};
-          this.calendar.forEach(c => {
-            let curDt = c.date;
-            let pl = this.costPls.filter(
-              p => p.taskId === r.id && p.date.getTime() === curDt.getTime())[0];
-            let ac = this.costAcs.filter(
-              a => a.taskId === r.id && a.date.getTime() === curDt.getTime())[0];
-            m[r.id][curDt.getTime()] = [pl, ac];
-          });
+    recalculateCostMap() {
+      // this.costPlanMap = (() => {
+      //   let sd = new Date();
+      //   let m = {};
+      //   this.rows.forEach(r => {
+      //     if(r.id === "") return;
+      //     m[r.id] = {};
+      //     this.calendar.forEach(c => {
+      //       let curDt = c.date;
+      //       let pl = this.costPls.filter(
+      //         p => p.taskId === r.id && p.date.getTime() === curDt.getTime())[0];
+      //       let ac = this.costAcs.filter(
+      //         a => a.taskId === r.id && a.date.getTime() === curDt.getTime())[0];
+      //       m[r.id][curDt.getTime()] = [pl, ac];
+      //     });
+      //   });
+      //   let ed = new Date();
+      //   console.log("costPlanMap", ed - sd);
+      //   return m;
+      // })();
+
+      let sd = new Date();
+
+      let cpmr = {};
+      let cpmc = {};
+      let camr = {};
+      let camc = {};
+      let cemr = {};
+      let cemc = {};
+
+      let calc = (costs, mc, mr) => {
+        costs.forEach(c => {
+          if(!mc[c.date.getTime()]) mc[c.date.getTime()] = {};
+          mc[c.date.getTime()][c.taskId] = c;
+
+          if(!mr[c.taskId]) mr[c.taskId] = {};
+          mr[c.taskId][c.date.getTime()] = c;
         });
-        let ed = new Date();
-        console.log("costPlanMap", ed - sd);
-        return m;
-      })();
+      };
+
+      calc(this.costPls, cpmc, cpmr);
+      calc(this.costAcs, camc, camr);
+      calc(this.costEvs, cemc, cemr);
+
+      let ed = new Date();
+
+      console.log("recalculateCostMap", ed - sd);
+
+      let costMap = {
+        cpmr: cpmr,
+        cpmc: cpmc,
+        camr: camr,
+        camc: camc,
+        cemr: cemr,
+        cemc: cemc
+      };
+
+      this.costMap = costMap;
+
+      return costMap;
+    },
+    updateCostMapSetCost(n, id, date, cost) {
+      let target = null;
+      if(n === 0) {
+        target = this.costMap.cpmr;
+      } else if(n === 1) {
+        target = this.costMap.camr;
+      } else if(n === 2) {
+        target = this.costMap.cemr;
+      }
+
+      target[id][date.getTime()].cost = cost;
+    },
+    updateCostMapAddCost(n, id, date, obj) {
+      let mr = null;
+      let mc = null;
+      if(n === 0) {
+        mr = this.costMap.cpmr;
+        mc = this.costMap.cpmc;
+      } else if(n === 1) {
+        mr = this.costMap.camr;
+        mc = this.costMap.camc;
+      } else if(n === 2) {
+        mr = this.costMap.cemr;
+        mc = this.costMap.cemc;
+      }
+
+      if(!mr[id]) mr[id] = {};
+      if(!mc[date.getTime()]) mc[date.getTime()] = {};
+
+      mr[id][date.getTime()] = obj;
+      mc[date.getTime()][id] = obj;
+    },
+    updateCostMapDelCost(n, id, date) {
+      let mr = null;
+      let mc = null;
+      if(n === 0) {
+        mr = this.costMap.cpmr;
+        mc = this.costMap.cpmc;
+      } else if(n === 1) {
+        mr = this.costMap.camr;
+        mc = this.costMap.camc;
+      } else if(n === 2) {
+        mr = this.costMap.cemr;
+        mc = this.costMap.cemc;
+      }
+
+      if(!mr[id]) mr[id] = {};
+      if(!mc[date.getTime()]) mc[date.getTime()] = {};
+
+      delete mr[id][date.getTime()];
+      delete mc[date.getTime()][id];
+    },
+    recalculateRowsStatistics() {
+      let rs = {};
+      this.rows.forEach(r => {
+        rs[r.id] = [0,0,0];
+        let mr;
+
+        mr = this.costMap.cpmr;
+        if(mr[r.id]) {
+          rs[r.id][0] = Object.keys(mr[r.id])
+            .map(k => mr[r.id][k].cost)
+            .reduce((m,x) => m + x, 0.0);
+        }
+
+        mr = this.costMap.camr;
+        if(mr[r.id]) {
+          rs[r.id][1] = Object.keys(mr[r.id])
+            .map(k => mr[r.id][k].cost)
+            .reduce((m,x) => m + x, 0.0);
+        }
+
+        mr = this.costMap.cemr;
+        if(mr[r.id]) {
+          rs[r.id][2] = Object.keys(mr[r.id])
+            .map(k => mr[r.id][k].cost)
+            .reduce((m,x) => m + x, 0.0);
+        }
+      });
+
+      this.rowsStatistics = rs;
+
+      return rs;
     },
     recalcurateViewWindow() {
       let scrollTop = (this?.$refs?.root?.scrollTop)? this?.$refs?.root?.scrollTop : 0;
@@ -461,16 +613,22 @@ export default {
 
       if(isNaN(cost)) {
         this.removeCostPlan(n, costInput[1]);
+        this.updateCostMapDelCost(n, costInput[1].taskId, costInput[1].date);
+        this.recalculateRowsStatistics();
         return;
       }
 
       if(costInput[1] != null) {
         costInput[1].cost = cost;
+        this.updateCostMapSetCost(n, costInput[1].taskId, costInput[1].date, cost);
       } else {
         let costData = this.createCostPlan(
           this.rows[i].id, this.calendar[j].date, cost );
         this.addCostPlan(n, costData);
+        this.updateCostMapAddCost(n, this.rows[i].id, this.calendar[j].date, costData);
       }
+
+      this.recalculateRowsStatistics();
     },
     createCostPlan(taskId, date, cost) {
       return { taskId: taskId, date: date, cost: cost };
@@ -560,12 +718,14 @@ export default {
       this.rows.splice(index, 0, obj);
       this.rowsMeta.splice(index, 0, { row: obj, fold: false});
       this.recalculateRowsStructure();
+      this.recalculateCostMap();
     },
     removeRow(row) {
       let index = this.rows.indexOf(row);
       this.rows.splice(index, 1);
       this.rowsMeta.splice(index, 1);
       this.recalculateRowsStructure();
+      this.recalculateCostMap();
     },
     createRow(id, subject) {
       return ({ id: id, subject: subject, });
@@ -917,5 +1077,9 @@ export default {
     this.recalcurateViewWindow();
     this.vacuum();
     this.recalculateRowsStructure();
+    this.recalculateCostMap();
+    this.recalculateRowsStatistics();
+
+    window.gantt = this;
   }
 }
