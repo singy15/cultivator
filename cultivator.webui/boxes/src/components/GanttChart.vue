@@ -202,8 +202,12 @@ export default ganttChart;
             <br>
             <span>AC:{{ rowsStatistics?.[row[0].id]?.[2] }}</span>
             -->
-            <span style="font-size:0.8em;">{{ formatPercent(rowsStatistics?.[row[0].id]?.[2], rowsStatistics?.[row[0].id]?.[0]) }}</span>
-            <span style="font-size:0.8em; color:white; background-color:rgba(255,100,100);">{{ formatCostState(rowsStatistics?.[row[0].id]?.[1], rowsStatistics?.[row[0].id]?.[0]) }}</span>
+            <span :style="{fontSize:`0.8em`}">
+              {{ formatPercent(rowsStatistics?.[row[0].id]?.[2], rowsStatistics?.[row[0].id]?.[0]) }}
+              </span>
+            <span :style="{fontSize:`0.8em`, color:`white`, backgroundColor:`rgba(255,100,100)`}">
+              {{ formatCostState(rowsStatistics?.[row[0].id]?.[1], rowsStatistics?.[row[0].id]?.[0]) }}
+              </span>
           </span>
         </div>
 
