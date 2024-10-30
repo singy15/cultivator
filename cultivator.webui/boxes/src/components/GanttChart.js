@@ -617,6 +617,7 @@ export default {
       let cost = parseFloat(newVal, 10);
 
       if(newVal === "-") return;
+      if(newVal.endsWith(".")) return;
 
       if(isNaN(cost)) {
         this.removeCostPlan(n, costInput[1]);
